@@ -1,0 +1,263 @@
+---
+title: "Data607 Assignment1"
+author: "Joshua Registe"
+date: "8/30/2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+The following code chunk reads the dataset from the web and transforms the headers based on the description provided.
+
+
+```{r extract mushrooms data and transform headers}
+
+
+MushroomData<- read.csv(url("https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.data"),header = FALSE, stringsAsFactors = FALSE)
+
+headers<-c("poisonous-edible","cap-shape", "cap-surface","cap-color","bruises?","odor","gill-attachment","gill-spacing","gill-size","gill-color","stalk-shape","stalk-root","stalk-surface-above-ring","stalk-surface-below-ring","stalk-color-above-ring","stalk-color-below-ring","veil-type","veil-color","ring-number"," ring-type","spore-print-color","population","habitat")
+
+colnames(MushroomData)<-headers
+
+
+```
+
+
+
+The following code re-labels all text from each column of the dataset to their appropriate names, then subsets this information for columns 1 to 5. those columns include: Poisonous.Edible, cap-shape, cap-surface, cap-color, and bruises?.
+
+```{r transform data and subset columns}
+
+#0. cap-shape: bell=b,conical=c,convex=x,flat=f, knobbed=k,sunken=s 
+
+let<-c("p","e")
+let2<-c("poisonous","edible")
+x=1
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+#1. cap-shape: bell=b,conical=c,convex=x,flat=f, knobbed=k,sunken=s 
+
+let<-c("b","c","x","f","k","s")
+let2<-c("bell","conical","convex","flat","knobbed","sunken")
+x=2
+for (i in 1:length(let)){
+MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+
+#2. cap-surface: fibrous=f,grooves=g,scaly=y,smooth=s 
+
+let<-c("f","g","y","s")
+let2<-c("fibrous","grooves","scaly","smooth")
+x=3
+
+
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+
+#3. cap-color: brown=n,buff=b,cinnamon=c,gray=g,green=r, pink=p,purple=u,red=e,white=w,yellow=y 
+let<-c("n","b","c","g","r","p","u","e","w","y")
+let2<-c("brown","buff","cinnamon","gray", "green", "pink", "purple","red","white","yellow")
+x=4
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+
+#4. bruises?: bruises=t,no=f 
+
+let<-c("t","f")
+let2<-c("bruises","no")
+x=5
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+
+#5. odor: almond=a,anise=l,creosote=c,fishy=y,foul=f, musty=m,none=n,pungent=p,spicy=s 
+
+let<-c("a","l","c","y","f","m","n","p","s")
+let2<-c("almond","anise","creosote","fishy", "foul", "musty", "none","pungent","spicy")
+x=6
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+
+
+#6. gill-attachment: attached=a,descending=d,free=f,notched=n 
+
+let<-c("a","d","f","n")
+let2<-c("attached","descending","free","notched")
+x=7
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+
+
+#7. gill-spacing: close=c,crowded=w,distant=d 
+
+let<-c("c","w","d")
+let2<-c("close","crowded","distant")
+x=8
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+
+#8. gill-size: broad=b,narrow=n 
+
+let<-c("b","n")
+let2<-c("broad","narrow")
+x=9
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+#9. gill-color: black=k,brown=n,buff=b,chocolate=h,gray=g, green=r,orange=o,pink=p,purple=u,red=e, white=w,yellow=y 
+
+let<-c("k","n","b","h","g", "r","o","p","u","e","w","y")
+let2<-c("black","brown","buff","chocolate","gray", "green","orange", "pink", "purple","red","white","yellow")
+x=10
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+#10. stalk-shape: enlarging=e,tapering=t 
+let<-c("e","t")
+let2<-c("enlarging","tapering")
+x=11
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+#11. stalk-root: bulbous=b,club=c,cup=u,equal=e, rhizomorphs=z,rooted=r,missing=? 
+  
+  let<-c("b","c","u","e","z","r")
+let2<-c("bulbous","club","cup","equal","rhizomorhps","rooted")
+x=12
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+MushroomData[[x]]<- gsub("?","missing",MushroomData[[x]], fixed = TRUE)
+  
+#12. stalk-surface-above-ring: fibrous=f,scaly=y,silky=k,smooth=s 
+let<-c("f","y","k","s")
+let2<-c("fibrous","scaly","silky","smooth")
+x=13
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+
+
+
+#13. stalk-surface-below-ring: fibrous=f,scaly=y,silky=k,smooth=s 
+let<-c("f","y","k","s")
+let2<-c("fibrous","scaly","silky","smooth")
+x=14
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+
+#14. stalk-color-above-ring: brown=n,buff=b,cinnamon=c,gray=g,orange=o, pink=p,red=e,white=w,yellow=y 
+let<-c("n","b","c","g","o","p","e","w","y")
+let2<-c("brown","buff","cinnamon","gray", "orange", "pink", "red","white","yellow")
+x=15
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+#15. stalk-color-below-ring: brown=n,buff=b,cinnamon=c,gray=g,orange=o, pink=p,red=e,white=w,yellow=y 
+let<-c("n","b","c","g","o","p","e","w","y")
+let2<-c("brown","buff","cinnamon","gray", "orange", "pink", "red","white","yellow")
+x=16
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+#16. veil-type: partial=p,universal=u 
+let<-c("p","u")
+let2<-c("partial","universal")
+x=17
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+#17. veil-color: brown=n,orange=o,white=w,yellow=y 
+
+let<-c("n","o","w","y")
+let2<-c("brown","orange","white","yellow")
+x=18
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+
+#18. ring-number: none=n,one=o,two=t 
+let<-c("n","o","t")
+let2<-c("none","one","two")
+x=19
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+
+#19. ring-type: cobwebby=c,evanescent=e,flaring=f,large=l, none=n,pendant=p,sheathing=s,zone=z 
+let<-c("c","e","f","l","n","p","s","z")
+let2<-c("cobwebby","evanescent","flaring","large","none","pendant","sheathing","zone")
+x=20
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+
+#20. spore-print-color: black=k,brown=n,buff=b,chocolate=h,green=r, orange=o,purple=u,white=w,yellow=y 
+let<-c("k","n","b","h","r","o","u","w","y")
+let2<-c("black","brown","buff","chocolate","green", "orange", "purple","white","yellow")
+x=21
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+
+#21. population: abundant=a,clustered=c,numerous=n, scattered=s,several=v,solitary=y 
+let<-c("a","c","n","s","v","y")
+let2<-c("abundant","clustered","numerous","scattered","several","solitary")
+x=22
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+
+
+#22. habitat: grasses=g,leaves=l,meadows=m,paths=p, urban=u,waste=w,woods=d
+let<-c("g","l","m","p","u","w","d")
+let2<-c("grasses","leaves","meadows","paths","urban","waste","woods")
+x=23
+for (i in 1:length(let)){
+  MushroomData[[x]]<- gsub(paste0("\\b",let[i],"\\b"),let2[i],MushroomData[[x]], perl = TRUE)
+}
+rm(let,let2,x,i,headers)
+
+MushroomData.Subset<-MushroomData[1:5]
+
+```
+
+
+
+```{r}
+MushroomData.Subset
+```
+

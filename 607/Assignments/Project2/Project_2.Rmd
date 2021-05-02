@@ -1,0 +1,433 @@
+---
+title: "Project 2"
+author: "Joshua Registe"
+date: "10/6/2019"
+output:  html_document
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+library(tidyverse)
+library(dplyr)
+library(stringr)
+library(reshape2)
+library(tidyr)
+library(data.table)
+library(readr)
+library(readxl)
+library(httr)
+```
+
+# Project 2{.tabset}
+
+## Dataset 1 - Candy
+
+The following database from the University of british columbia talks about the candy hierarchy.
+<br />
+The Survey Information can be found here:
+<br />
+<https://www.scq.ubc.ca/wp-content/uploads/2017/10/candyhierarchysurvey2017.pdf>
+<br />
+and this dataset can be downloaded here:
+<br />
+<https://www.scq.ubc.ca/wp-content/uploads/2017/10/candyhierarchy2017.csv>
+<br />
+
+```{r cars}
+candyhierarchy2017 <- read.csv("C:/Users/joshu/OneDrive - CDM Smith/Documents/CUNY SPS/Data 607/Assignments/Project2/candyhierarchy2017.csv", dec=",")
+
+str(candyhierarchy2017)
+```
+
+As shown above, all data has been imported as factors and this survey is represented primarily by classification-type data.the dataset has approximately 2460 observations (rows) by 120 variables (columns).
+<br />
+We can start by gathering all the columns that share the same type of question (e.g. Q6. represents all the candies spread out over various columns)
+<br />
+<br />
+
+Start by extracting based on patterns in column names. All columns with questions begin with Q, so we will extract all the questionaire items first. and we will create a function to do so while keeping the unique id
+<br />
+
+```{r}
+
+NamesVector<-colnames(candyhierarchy2017)
+NamesVector
+
+gatherer<- function(StringtoGatherOn){
+  Question<-str_which(NamesVector,paste0("\\b^",StringtoGatherOn,"\\b"))
+  wideQs<- candyhierarchy2017[c(1,Question)]
+  LongQs<-gather(wideQs, key = "tempcol", value = "Response", -Internal.ID)
+  LongQs$QuestionID<-str_sub(LongQs[[2]], 1,nchar(StringtoGatherOn))
+  LongQs$Question<-str_sub(LongQs[[2]],nchar(StringtoGatherOn)+1,-1L)%>% str_replace_all("^\\.+","")%>%str_replace_all("\\."," ")
+  LongQs<-LongQs[c(1,4,5,3)]
+  LongQs
+}
+
+
+```
+
+
+
+Exctracting all the unique question IDs to pass into "Questionlist" vector. From this vector, we can pass all of our unique question IDs into our function so that we can aggregate these into a tidy format.
+
+```{r}
+Questionlist<-str_extract_all(NamesVector,"Q\\d*")%>% unlist() %>% unique()
+Questionlist
+```
+<br />
+
+
+We create a dataframe called CandySurvey which will loop through our questionlist vector and pass each into our function called "gatherer" and bind these all into one single long-formatted dataframe.
+<br />
+```{r}
+CandySurvey<-data.frame()
+for( i in 1:length(Questionlist)){
+  
+  Questionsubset<-gatherer(Questionlist[i])
+  Questionsubset$Response<-as.character(Questionsubset$Response)
+  CandySurvey<-bind_rows(CandySurvey,Questionsubset)
+  
+}
+
+head(CandySurvey)
+```
+<br />
+<br />
+
+Now that we have this into a concise tidy format, we can begin to summarize this information by question any way we desire. The method below is summarizing question 6 which was spread out over 103 columns and is now in 1 column and we can get the count of responses for all individuals.
+<br />
+<br />
+```{r}
+
+CandyPreferenceSummary<-
+  CandySurvey%>%
+  filter(QuestionID=="Q6")%>% 
+  group_by(Question,Response)%>%
+  summarise(n())
+setnames(CandyPreferenceSummary, "n()","Count")
+
+CandyPreferenceSummary$Response[CandyPreferenceSummary$Response==""]<-"No Response"
+CandyPreferenceSummary<-as.data.frame(CandyPreferenceSummary)
+
+head(CandyPreferenceSummary)
+
+```
+
+<br />
+Now we can start doing some visualisations with our data. Since the surveys consists of over 100 different candy types, for purposes of useful visualizing, the top 25 candies that gave the consumers a feeling of Joy, Meh, Despair and even no responses are shown in the visualisations below.
+<br />
+
+```{r}
+CandyPreferenceSummary%>%filter(Response == "JOY")%>% top_n(n = c(25))%>%
+  ggplot(aes(reorder(Question,Count),y = Count))+
+  geom_col(color ="black",fill = "skyblue3",alpha = .5)+facet_grid(Response~.)+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1.0))+
+  coord_flip()+
+  labs(x = "Candy",
+       y = "Count of Candies",
+       title = "Top 25 Candies With Positive Responses")
+
+
+CandyPreferenceSummary%>%filter(Response == "MEH")%>% top_n(n = c(25))%>%
+  ggplot(aes(reorder(Question,Count),y = Count))+
+  geom_col(color ="black",fill = "orange3",alpha = .5)+facet_grid(Response~.)+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1.0))+
+  coord_flip()+
+  labs(x = "Candy",
+       y = "Count of Candies",
+       title = "Top 25 Candies With Indifferent Responses")
+
+
+CandyPreferenceSummary%>%filter(Response == "DESPAIR")%>% top_n(n = c(25))%>%
+  ggplot(aes(reorder(Question,Count),y = Count))+
+  geom_col(color ="black",fill = "orange3",alpha = .5)+facet_grid(Response~.)+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1.0))+
+  coord_flip()+
+  labs(x = "Candy",
+       y = "Count of Candies",
+       title = "Top 25 Candies With \nNegative Responses")
+
+
+CandyPreferenceSummary%>%filter(Response == "No Response")%>% top_n(n = c(25))%>%
+  ggplot(aes(reorder(Question,Count),y = Count))+
+  geom_col(color ="black",fill = "purple3",alpha = .5)+facet_grid(Response~.)+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1.0))+
+  coord_flip()+
+  labs(x = "Candy",
+       y = "Count of Candies with No Response",
+       title = "Top 25 Candies With No Response")
+```
+
+<br />
+This data is in the most compressed form where the tidying was based on questions, however there are some questions on the survey that may be more useful as seperate columns such as Question 2 on Gender. Separating identifying information like this can potentially better our data visualisations later by allowing facets of this information. Below shows a method to Extract this information as a seperate column and present an alternate visualisation.
+<br />
+
+```{r}
+semi_WideSurvey<-data.frame(candyhierarchy2017[c(1,2,3,4,5,6)])
+Question_6<-gatherer("Q6")
+semi_WideSurvey<-left_join(semi_WideSurvey,Question_6, by = "Internal.ID")
+
+
+CandyPreferenceSummary2<-
+  semi_WideSurvey%>%
+  group_by(Q2..GENDER, Question,Response)%>%
+  summarise(n())
+setnames(CandyPreferenceSummary2, "n()","Count")
+setnames(CandyPreferenceSummary2, "Q2..GENDER","Gender")
+CandyPreferenceSummary2$Response[CandyPreferenceSummary2$Response==""]<-"No Response"
+CandyPreferenceSummary2<-as.data.frame(CandyPreferenceSummary2)
+
+head(CandyPreferenceSummary2)
+```
+
+<br />
+<br />
+We can now visualise this by gender. From a quick glance, we can notive that most of the respondents are actually Male which can be confirmed by running a count of male vs female on the dataframe. additionally there are few respondents who either rather not say their gender, identify as other, or did not input a gender. Full size Candy bars seem to be the most popular according to this survey followed by many chocolate based candies such as Reeses Peanut butter cups, Kit Kats, twix and Snickers.
+<br />
+<br />
+
+```{r,fig.width=10,fig.height=30}
+
+CandyPreferenceSummary2%>%filter(Response == "JOY")%>%
+  ggplot(aes(reorder(Question,Count),y = Count))+
+  geom_col(color ="black",aes(fill = Gender),alpha = .5)+facet_grid(Response~.)+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1.0))+
+  coord_flip()+aes(reorder(stringr::str_wrap(Question,25),Count), Count)+
+  labs(x = "Candy",
+       y = "Count of Candies with Positive Responses",
+       title = "All Candies With Positive Responses by Gender")
+```
+
+## Dataset 2 - Country Mortality Rates
+
+<br />
+The UN inter-agency Group for Child Mortality Estimation collects children death and mortality rates for countries all around the world. These statistics are defined for children under 5, infants, and neonatals and dates back to as early as 1950. As shown below, the data is not in a tidy format and structures all the years and children types as columns.
+<br />
+Their homepage can be found here:
+<br />
+<https://childmortality.org>
+
+<br />
+and this dataset can be downloaded here:
+<https://sejdemyr.github.io/r-tutorials/basics/data/RatesDeaths_AllIndicators.xlsx>
+
+```{r}
+GET("https://github.com/joshuargst/Data607Project2/blob/master/RatesDeaths_AllIndicators.xlsx?raw=true",
+    write_disk(tf<-tempfile(fileext = ".xlsx")))
+
+RatesDeaths_AllIndicators <- read_excel(tf)
+str(RatesDeaths_AllIndicators)
+```
+
+<br />
+For tracking and potential linkage purposes later, we initiate a column ID to create reference for wide dataset reorder so that this ID is shown as the first column. We extract all the column names as a vector so that we may perform any necessary string manipulations and extractions to tidy our dataset.
+<br />
+
+```{r}
+
+RatesDeaths_AllIndicators$IDWide<-seq.int(nrow(RatesDeaths_AllIndicators))
+
+
+RatesDeaths_AllIndicators<- RatesDeaths_AllIndicators[c(ncol(RatesDeaths_AllIndicators),1:ncol(RatesDeaths_AllIndicators)-1)]
+
+NamesVector<-colnames(RatesDeaths_AllIndicators)
+
+head(NamesVector)
+
+mortalityratescolumns<-
+  str_extract_all(NamesVector,"[:graph:]*MR*[:graph:]*")%>%unlist
+deathratescolumns<-
+  str_extract_all(NamesVector,"[:graph:]*Death*[:graph:]*")%>%unlist
+
+
+
+```
+
+<br />
+Using stringr, we are able to extract all the mortality rates columns, and all of the death columns and gather them as needed. We also remove NA's that are a result of converting a dataset from wide to long.
+<br />
+
+```{r}
+RatesDeathTidy <- gather(RatesDeaths_AllIndicators,key = "Category", value = "Count", -IDWide,-`ISO Code`,-CountryName,-`Uncertainty bounds*`)
+RatesDeathTidy<- RatesDeathTidy[is.na(RatesDeathTidy$Count)==FALSE,]
+
+RatesDeathTidy$Year<-
+  str_extract_all(RatesDeathTidy$Category,"\\d{4}$")%>% unlist
+
+RatesDeathTidy$Category<- str_replace_all(RatesDeathTidy$Category,"\\.\\d{4}$","")
+
+```
+
+<br />
+We can classify our dataset by stat type, in this case all columns with MR transferred to a row that designates this as "Mortality Rate" and all columns with "Death" transferred to that same column and designated as "Death Count".
+additionally we can aggregate the meanings of some of the categories since we've created a separate classification column for mortality rates stats vs death count stats. The UNIGME abbreviates the following: 
+<br />
+U5MR as Under five years of age mortality rate
+<br />
+IMR as Infant moratility rate
+<br />
+NMR as Neonatal mortality rates
+<br />
+
+
+
+```{r}
+
+RatesDeathTidy$StatType<-RatesDeathTidy$Category
+RatesDeathTidy$StatType <- str_replace_all(RatesDeathTidy$Category,"[:graph:]*MR*[:graph:]*", "Mortality Rate")
+RatesDeathTidy$StatType <- str_replace_all(RatesDeathTidy$StatType,"[:graph:]*Death*[:graph:]*", "Death Count")
+unique(RatesDeathTidy$StatType)
+unique(RatesDeathTidy$Category)
+RatesDeathTidy$Category<-str_replace_all(RatesDeathTidy$Category,"U5MR", "Under.five")
+RatesDeathTidy$Category<-str_replace_all(RatesDeathTidy$Category,"IMR", "Infant")
+RatesDeathTidy$Category<-str_replace_all(RatesDeathTidy$Category,"NMR", "NeoNatal")
+RatesDeathTidy$Category<-str_replace_all(RatesDeathTidy$Category,"\\.Deaths", "")
+
+
+
+```
+<br />
+
+The final Tidy dataset is shown below:
+```{r}
+head(RatesDeathTidy)
+```
+
+We can now start to visualise our dataset. Below shows a box plot of the distribution of mortality rates for each classification of child-type for all countries over all years of data collected
+
+
+```{r}
+RatesDeathTidy%>% filter(StatType == "Mortality Rate")%>%
+  ggplot(aes(y = Count, x = Category))+geom_boxplot()+
+  labs(title = "Mortality Rates Distribution Across All Countries")
+
+```
+<br />
+<br />
+we can get a litte bit more granular by looking at the list of countries by pulling a unique index from our dataset outlining all countries. In the figure below, we are showing the mortality rates of the first 10 countries within our index over time. In addition, we are coloring this by the level of uncertainty associated with that predicted mortality rate.
+
+```{r,fig.width=10,fig.height=16}
+
+RatesDeathTidy$Year<- as.numeric(RatesDeathTidy$Year)
+
+ListofCountries<-unique(RatesDeathTidy$CountryName)
+
+
+RatesDeathTidy%>%
+  filter(CountryName %in% ListofCountries[1:10])%>%  
+  filter(Category== "Under.five")%>% 
+  filter(StatType == "Mortality Rate")%>%
+  ggplot(aes(x = Year,y = Count))+geom_point(aes(color = `Uncertainty bounds*`))+facet_grid(CountryName~.,labeller = labeller(CountryName=label_wrap_gen(width = 10)),scales = "free_y")
+
+
+```
+
+<br />
+<br />
+We can do this for every country within our dataset by facetting the entire collection as shown below. This allows use to quickly visualise the mortality rates overtime for all countries and the uncertainty associated with each dataset. Geographic data of this type is also better visualised through a geographic information system mapping such as a choropleth map which can be done in various applications such as ArcGIS and with packages in R such as leaflet and ggmaps.
+<br />
+```{r,fig.width=10,fig.height=200}
+RatesDeathTidy%>%
+  filter(CountryName %in% ListofCountries)%>%  
+  filter(Category== "Under.five")%>% 
+  filter(StatType == "Mortality Rate")%>%
+  ggplot(aes(x = Year,y = Count))+geom_point(aes(color = `Uncertainty bounds*`))+facet_wrap(ncol = 3, CountryName~.,labeller = labeller(CountryName=label_wrap_gen(width = 10)),scales = "free")
+```
+
+
+
+## Dataset 3 - ELA and Math Testing
+
+
+<br />
+This database contains assessment data for grades 3-8 on ELA and Math and has several subgroups to break this data in to. The files are too large to be uploaded to github so only a portion of this data is being used for purposes of this assignment. but the data can be found on the New York State Education website here:
+<br />
+<https://data.nysed.gov/downloads.php>
+<br />
+
+This data can be read using the read_excel function in r and we can specify the column types as needed. The untidy data is shown below.
+```{r}
+
+
+GET("https://github.com/joshuargst/Data607Project2/blob/master/3-8_ELA_AND_MATH_RESEARCHER_FILE_2019.xlsx?raw=true",
+    write_disk(tf2<-tempfile(fileext = ".xlsx")))
+
+ELA_AND_MATH_RESEARCHER_FILE_2019 <- read_excel(tf2,col_types = c("text", "numeric", "text", 
+                                                                   "numeric", "numeric", "numeric", 
+                                                                   "text", "text", "text", "numeric", 
+                                                                   "text", "numeric", "numeric", "numeric", 
+                                                                   "numeric", "numeric", "numeric", 
+                                                                   "numeric", "numeric", "numeric", 
+                                                                   "numeric", "numeric", "numeric"))
+
+
+```
+
+
+```{r}
+head(ELA_AND_MATH_RESEARCHER_FILE_2019)
+```
+
+<br />
+Now that we've imported this dataset, we can remove unecessary information that we wont use in any downstream analysis. this includes information like the first column which has the same value for the entire dataset, County code, bedscode, subgroup code, and NRC code.
+<br />
+
+
+```{r}
+ELA_AND_MATH_RESEARCHER_FILE_2019<- ELA_AND_MATH_RESEARCHER_FILE_2019[-c(1,2,4,6,10)]
+```
+
+
+Additionally, we can extract the names of all of our columns so that we may manipulate the data frame based on patterns in any of the column name strings.
+
+```{r}
+
+NamesVector<-colnames(ELA_AND_MATH_RESEARCHER_FILE_2019)
+NamesVector
+```
+<br />
+For this analysis, we can focus on the percentage information provided within this database. We notice that all of our percent based columns end in "PCT" so we can use the stringr package to parse this information out and keep relevant columns.
+<br />
+
+```{r}
+Percent_Columns<-str_which(NamesVector,"PCT$")
+ELA_AND_MATH_RESEARCHER_FILE_2019<- ELA_AND_MATH_RESEARCHER_FILE_2019[c(1:7,Percent_Columns)]
+```
+<br />
+<br />
+Now we can tidy this data by aggregating these level columns using a combination of our stringr package, tidyr package, and dplyr's piping operator. A sample of the tidy dataset is shown below.
+
+```{r}
+NamesVector<-colnames(ELA_AND_MATH_RESEARCHER_FILE_2019)
+
+ELA_Math.long<- gather(ELA_AND_MATH_RESEARCHER_FILE_2019,key = "Level", value = "Percentage",-NRC_DESC,-COUNTY_DESC,-NAME,-ITEM_SUBJECT_AREA,-ITEM_DESC,-SUBGROUP_NAME,-TOTAL_TESTED)
+
+ELA_Math.long$Level<- ELA_Math.long$Level%>% str_replace_all("L","Level")%>% str_replace_all("_PCT","")
+unique(ELA_Math.long$Level)
+
+head(ELA_Math.long)
+```
+<br />
+<br />
+
+Finally we can perform some sample aggregation plots on our tidy data using the stat_summary function within ggplot to get mean percentages of test takers by each grade level. We further segment this down in later plots by showing facetting our data by some of our columns including the subject area (e.g. ELA or Mathematics), or by the subgroup name. We notice that the distribution is very similar for ELA and Mathematics by grade level. Additionally we notice that majority of the individuals are Caucasian and the subgroups contain ethnicities, genders, and even residential status which may be more appropriate if separated out.
+<br />
+
+```{r}
+
+ELA_Math.long %>%
+ggplot(aes(x = Level, y = Percentage)) +stat_summary(geom = "bar", fun.y = "mean")
+
+
+ELA_Math.long %>%
+  ggplot(aes(x = Level, y = Percentage)) +stat_summary(geom = "bar", fun.y = "mean",aes(fill = ITEM_SUBJECT_AREA))+
+  facet_grid(ITEM_SUBJECT_AREA~.)
+
+
+ELA_Math.long %>%filter(SUBGROUP_NAME != "All Students")%>%
+  ggplot(aes(x = Level, y = Percentage)) +stat_summary(geom = "bar", fun.y = "mean",aes(fill = SUBGROUP_NAME),color = "black")
+```
+
+
+

@@ -1,0 +1,843 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Introduction to linear regression},
+  pdfauthor={Joshua Registe},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+
+\title{Introduction to linear regression}
+\author{Joshua Registe}
+\date{}
+
+\begin{document}
+\maketitle
+
+\hypertarget{batter-up}{%
+\subsection{Batter up}\label{batter-up}}
+
+The movie
+\href{http://en.wikipedia.org/wiki/Moneyball_(film)}{Moneyball} focuses
+on the ``quest for the secret of success in baseball''. It follows a
+low-budget team, the Oakland Athletics, who believed that underused
+statistics, such as a player's ability to get on base, betterpredict the
+ability to score runs than typical statistics like home runs, RBIs (runs
+batted in), and batting average. Obtaining players who excelled in these
+underused statistics turned out to be much more affordable for the team.
+
+In this lab we'll be looking at data from all 30 Major League Baseball
+teams and examining the linear relationship between runs scored in a
+season and a number of other player statistics. Our aim will be to
+summarize these relationships both graphically and numerically in order
+to find which variable, if any, helps us best predict a team's runs
+scored in a season.
+
+\hypertarget{the-data}{%
+\subsection{The data}\label{the-data}}
+
+Let's load up the data for the 2011 season.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{load}\NormalTok{(}\StringTok{"more/mlb11.RData"}\NormalTok{)}
+\KeywordTok{library}\NormalTok{(tidyverse)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## -- Attaching packages ---------------------------------------------------------------------------------------------- tidyverse 1.3.0 --
+\end{verbatim}
+
+\begin{verbatim}
+## v ggplot2 3.3.0     v purrr   0.3.4
+## v tibble  3.0.1     v dplyr   0.8.5
+## v tidyr   1.0.2     v stringr 1.4.0
+## v readr   1.3.1     v forcats 0.5.0
+\end{verbatim}
+
+\begin{verbatim}
+## -- Conflicts ------------------------------------------------------------------------------------------------- tidyverse_conflicts() --
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()
+\end{verbatim}
+
+In addition to runs scored, there are seven traditionally used variables
+in the data set: at-bats, hits, home runs, batting average, strikeouts,
+stolen bases, and wins. There are also three newer variables: on-base
+percentage, slugging percentage, and on-base plus slugging. For the
+first portion of the analysis we'll consider the seven traditional
+variables. At the end of the lab, you'll work with the newer variables
+on your own.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  What type of plot would you use to display the relationship between
+  \texttt{runs} and one of the other numerical variables? Plot this
+  relationship using the variable \texttt{at\_bats} as the predictor.
+  Does the relationship look linear? If you knew a team's
+  \texttt{at\_bats}, would you be comfortable using a linear model to
+  predict the number of runs?
+\end{enumerate}
+
+The type of plot I would use is a scatter plot to determine if there is
+any relationship between two numerical variables. The relationship does
+look linear and i would consider using a linear model to predict the
+number of runs.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{at_bats, mlb11}\OperatorTok{$}\NormalTok{runs)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{REGISTEJH-simple_regression_files/figure-latex/unnamed-chunk-1-1.pdf}
+
+If the relationship looks linear, we can quantify the strength of the
+relationship with the correlation coefficient.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{cor}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{runs, mlb11}\OperatorTok{$}\NormalTok{at_bats)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.610627
+\end{verbatim}
+
+\hypertarget{sum-of-squared-residuals}{%
+\subsection{Sum of squared residuals}\label{sum-of-squared-residuals}}
+
+Think back to the way that we described the distribution of a single
+variable. Recall that we discussed characteristics such as center,
+spread, and shape. It's also useful to be able to describe the
+relationship of two numerical variables, such as \texttt{runs} and
+\texttt{at\_bats} above.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Looking at your plot from the previous exercise, describe the
+  relationship between these two variables. Make sure to discuss the
+  form, direction, and strength of the relationship as well as any
+  unusual observations.
+\end{enumerate}
+
+The relationship is a positive linear relationship with a pearson's r of
+0.61. there are seemingly a few outliers and the spread of the data
+seems to increase with increased number of at\_bats
+
+Just as we used the mean and standard deviation to summarize a single
+variable, we can summarize the relationship between these two variables
+by finding the line that best follows their association. Use the
+following interactive function to select the line that you think does
+the best job of going through the cloud of points.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Note that this chunk will only run in interactive mode}
+\KeywordTok{plot_ss}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ mlb11}\OperatorTok{$}\NormalTok{at_bats, }\DataTypeTok{y =}\NormalTok{ mlb11}\OperatorTok{$}\NormalTok{runs)}
+\end{Highlighting}
+\end{Shaded}
+
+After running this command, you'll be prompted to click two points on
+the plot to define a line. Once you've done that, the line you specified
+will be shown in black and the residuals in blue. Note that there are 30
+residuals, one for each of the 30 observations. Recall that the
+residuals are the difference between the observed values and the values
+predicted by the line:
+
+\[
+  e_i = y_i - \hat{y}_i
+\]
+
+The most common way to do linear regression is to select the line that
+minimizes the sum of squared residuals. To visualize the squared
+residuals, you can rerun the plot command and add the argument
+\texttt{showSquares\ =\ TRUE}.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Note that this chunk will only run in interactive mode}
+\KeywordTok{plot_ss}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ mlb11}\OperatorTok{$}\NormalTok{at_bats, }\DataTypeTok{y =}\NormalTok{ mlb11}\OperatorTok{$}\NormalTok{runs, }\DataTypeTok{showSquares =} \OtherTok{TRUE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{REGISTEJH-simple_regression_files/figure-latex/plotss-atbats-runs-squares-1.pdf}
+
+\begin{verbatim}
+## Click two points to make a line.                                
+## Call:
+## lm(formula = y ~ x, data = pts)
+## 
+## Coefficients:
+## (Intercept)            x  
+##  -2789.2429       0.6305  
+## 
+## Sum of Squares:  123721.9
+\end{verbatim}
+
+Note that the output from the \texttt{plot\_ss} function provides you
+with the slope and intercept of your line as well as the sum of squares.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Using \texttt{plot\_ss}, choose a line that does a good job of
+  minimizing the sum of squares. Run the function several times. What
+  was the smallest sum of squares that you got? How does it compare to
+  your neighbors?
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# Note that this chunk will only run in interactive mode}
+\KeywordTok{plot_ss}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ mlb11}\OperatorTok{$}\NormalTok{at_bats, }\DataTypeTok{y =}\NormalTok{ mlb11}\OperatorTok{$}\NormalTok{hits)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{REGISTEJH-simple_regression_files/figure-latex/unnamed-chunk-2-1.pdf}
+
+\begin{verbatim}
+## Click two points to make a line.                                
+## Call:
+## lm(formula = y ~ x, data = pts)
+## 
+## Coefficients:
+## (Intercept)            x  
+##  -3688.5706       0.9229  
+## 
+## Sum of Squares:  62342.55
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot_ss}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ mlb11}\OperatorTok{$}\NormalTok{at_bats, }\DataTypeTok{y =}\NormalTok{ mlb11}\OperatorTok{$}\NormalTok{strikeouts)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{REGISTEJH-simple_regression_files/figure-latex/unnamed-chunk-2-2.pdf}
+
+\begin{verbatim}
+## Click two points to make a line.                                
+## Call:
+## lm(formula = y ~ x, data = pts)
+## 
+## Coefficients:
+## (Intercept)            x  
+##   4612.3207      -0.6269  
+## 
+## Sum of Squares:  265857.4
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot_ss}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ mlb11}\OperatorTok{$}\NormalTok{at_bats, }\DataTypeTok{y =}\NormalTok{ mlb11}\OperatorTok{$}\NormalTok{wins)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{REGISTEJH-simple_regression_files/figure-latex/unnamed-chunk-2-3.pdf}
+
+\begin{verbatim}
+## Click two points to make a line.                                
+## Call:
+## lm(formula = y ~ x, data = pts)
+## 
+## Coefficients:
+## (Intercept)            x  
+##   31.900137     0.008883  
+## 
+## Sum of Squares:  3764.367
+\end{verbatim}
+
+Of the 3 plots, bats and wins had the lowest sum of squares
+
+\hypertarget{the-linear-model}{%
+\subsection{The linear model}\label{the-linear-model}}
+
+It is rather cumbersome to try to get the correct least squares line,
+i.e.~the line that minimizes the sum of squared residuals, through trial
+and error. Instead we can use the \texttt{lm} function in R to fit the
+linear model (a.k.a. regression line).
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{m1 <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(runs }\OperatorTok{~}\StringTok{ }\NormalTok{at_bats, }\DataTypeTok{data =}\NormalTok{ mlb11)}
+\end{Highlighting}
+\end{Shaded}
+
+The first argument in the function \texttt{lm} is a formula that takes
+the form \texttt{y\ \textasciitilde{}\ x}. Here it can be read that we
+want to make a linear model of \texttt{runs} as a function of
+\texttt{at\_bats}. The second argument specifies that R should look in
+the \texttt{mlb11} data frame to find the \texttt{runs} and
+\texttt{at\_bats} variables.
+
+The output of \texttt{lm} is an object that contains all of the
+information we need about the linear model that was just fit. We can
+access this information using the summary function.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{summary}\NormalTok{(m1)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = runs ~ at_bats, data = mlb11)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -125.58  -47.05  -16.59   54.40  176.87 
+## 
+## Coefficients:
+##               Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) -2789.2429   853.6957  -3.267 0.002871 ** 
+## at_bats         0.6305     0.1545   4.080 0.000339 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 66.47 on 28 degrees of freedom
+## Multiple R-squared:  0.3729, Adjusted R-squared:  0.3505 
+## F-statistic: 16.65 on 1 and 28 DF,  p-value: 0.0003388
+\end{verbatim}
+
+Let's consider this output piece by piece. First, the formula used to
+describe the model is shown at the top. After the formula you find the
+five-number summary of the residuals. The ``Coefficients'' table shown
+next is key; its first column displays the linear model's y-intercept
+and the coefficient of \texttt{at\_bats}. With this table, we can write
+down the least squares regression line for the linear model:
+
+\[
+  \hat{y} = -2789.2429 + 0.6305 * atbats
+\]
+
+One last piece of information we will discuss from the summary output is
+the Multiple R-squared, or more simply, \(R^2\). The \(R^2\) value
+represents the proportion of variability in the response variable that
+is explained by the explanatory variable. For this model, 37.3\% of the
+variability in runs is explained by at-bats.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Fit a new model that uses \texttt{homeruns} to predict \texttt{runs}.
+  Using the estimates from the R output, write the equation of the
+  regression line. What does the slope tell us in the context of the
+  relationship between success of a team and its home runs?
+\end{enumerate}
+
+\hypertarget{prediction-and-prediction-errors}{%
+\subsection{Prediction and prediction
+errors}\label{prediction-and-prediction-errors}}
+
+Let's create a scatterplot with the least squares line laid on top.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{runs }\OperatorTok{~}\StringTok{ }\NormalTok{mlb11}\OperatorTok{$}\NormalTok{at_bats)}
+\KeywordTok{abline}\NormalTok{(m1)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{REGISTEJH-simple_regression_files/figure-latex/reg-with-line-1.pdf}
+
+The function \texttt{abline} plots a line based on its slope and
+intercept. Here, we used a shortcut by providing the model \texttt{m1},
+which contains both parameter estimates. This line can be used to
+predict \(y\) at any value of \(x\). When predictions are made for
+values of \(x\) that are beyond the range of the observed data, it is
+referred to as \emph{extrapolation} and is not usually recommended.
+However, predictions made within the range of the data are more
+reliable. They're also used to compute the residuals.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  If a team manager saw the least squares regression line and not the
+  actual data, how many runs would he or she predict for a team with
+  5,578 at-bats? Is this an overestimate or an underestimate, and by how
+  much? In other words, what is the residual for this prediction?
+\end{enumerate}
+
+\hypertarget{model-diagnostics}{%
+\subsection{Model diagnostics}\label{model-diagnostics}}
+
+To assess whether the linear model is reliable, we need to check for (1)
+linearity, (2) nearly normal residuals, and (3) constant variability.
+
+\emph{Linearity}: You already checked if the relationship between runs
+and at-bats is linear using a scatterplot. We should also verify this
+condition with a plot of the residuals vs.~at-bats. Recall that any code
+following a \emph{\#} is intended to be a comment that helps understand
+the code but is ignored by R.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(m1}\OperatorTok{$}\NormalTok{residuals }\OperatorTok{~}\StringTok{ }\NormalTok{mlb11}\OperatorTok{$}\NormalTok{at_bats)}
+\KeywordTok{abline}\NormalTok{(}\DataTypeTok{h =} \DecValTok{0}\NormalTok{, }\DataTypeTok{lty =} \DecValTok{3}\NormalTok{)  }\CommentTok{# adds a horizontal dashed line at y = 0}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{REGISTEJH-simple_regression_files/figure-latex/residuals-1.pdf}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{5}
+\tightlist
+\item
+  Is there any apparent pattern in the residuals plot? What does this
+  indicate about the linearity of the relationship between runs and
+  at-bats?
+\end{enumerate}
+
+there does not seem to be no apparent pattern, to me this implies that
+the relationship is not skewed by any particular points
+
+\emph{Nearly normal residuals}: To check this condition, we can look at
+a histogram
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{hist}\NormalTok{(m1}\OperatorTok{$}\NormalTok{residuals)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{REGISTEJH-simple_regression_files/figure-latex/hist-res-1.pdf}
+
+or a normal probability plot of the residuals.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{qqnorm}\NormalTok{(m1}\OperatorTok{$}\NormalTok{residuals)}
+\KeywordTok{qqline}\NormalTok{(m1}\OperatorTok{$}\NormalTok{residuals)  }\CommentTok{# adds diagonal line to the normal prob plot}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{REGISTEJH-simple_regression_files/figure-latex/qq-res-1.pdf}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{6}
+\tightlist
+\item
+  Based on the histogram and the normal probability plot, does the
+  nearly normal residuals condition appear to be met?
+\end{enumerate}
+
+Yes, the nearly normal distribution condition is met.
+
+\emph{Constant variability}:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{7}
+\tightlist
+\item
+  Based on the plot in (1), does the constant variability condition
+  appear to be met?
+\end{enumerate}
+
+Yes, the constant variability condition is met. * * *
+
+\hypertarget{on-your-own}{%
+\subsection{On Your Own}\label{on-your-own}}
+
+\begin{itemize}
+\tightlist
+\item
+  Choose another traditional variable from \texttt{mlb11} that you think
+  might be a good predictor of \texttt{runs}. Produce a scatterplot of
+  the two variables and fit a linear model. At a glance, does there seem
+  to be a linear relationship?
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ mlb11}\OperatorTok{$}\NormalTok{hits, }\DataTypeTok{y =}\NormalTok{ mlb11}\OperatorTok{$}\NormalTok{runs)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{REGISTEJH-simple_regression_files/figure-latex/unnamed-chunk-3-1.pdf}
+
+\begin{verbatim}
+at a glance, there does seem to be a positive linear relationship between hits and runs.
+\end{verbatim}
+
+\begin{itemize}
+\tightlist
+\item
+  How does this relationship compare to the relationship between
+  \texttt{runs} and \texttt{at\_bats}? Use the R\(^2\) values from the
+  two model summaries to compare. Does your variable seem to predict
+  \texttt{runs} better than \texttt{at\_bats}? How can you tell?
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{paste0}\NormalTok{(}\StringTok{"The R^2 of at_bats and runs was "}\NormalTok{, }\KeywordTok{round}\NormalTok{(}\KeywordTok{cor}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{at_bats,mlb11}\OperatorTok{$}\NormalTok{runs)}\OperatorTok{^}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "The R^2 of at_bats and runs was 0.37"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{paste0}\NormalTok{(}\StringTok{"The R^2 of hits and runs was "}\NormalTok{, }\KeywordTok{round}\NormalTok{(}\KeywordTok{cor}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{hits,mlb11}\OperatorTok{$}\NormalTok{runs)}\OperatorTok{^}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "The R^2 of hits and runs was 0.64"
+\end{verbatim}
+
+Based on the computation above, hits is a better predictor than at\_bats
+using linear modelling.
+
+\begin{itemize}
+\tightlist
+\item
+  Now that you can summarize the linear relationship between two
+  variables, investigate the relationships between \texttt{runs} and
+  each of the other five traditional variables. Which variable best
+  predicts \texttt{runs}? Support your conclusion using the graphical
+  and numerical methods we've discussed (for the sake of conciseness,
+  only include output for the best variable, not all five).
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{paste0}\NormalTok{(}\StringTok{"The R^2 of at_bats and runs was "}\NormalTok{, }\KeywordTok{round}\NormalTok{(}\KeywordTok{cor}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{at_bats,mlb11}\OperatorTok{$}\NormalTok{runs)}\OperatorTok{^}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "The R^2 of at_bats and runs was 0.37"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{paste0}\NormalTok{(}\StringTok{"The R^2 of homeruns and runs was "}\NormalTok{, }\KeywordTok{round}\NormalTok{(}\KeywordTok{cor}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{homeruns,mlb11}\OperatorTok{$}\NormalTok{runs)}\OperatorTok{^}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "The R^2 of homeruns and runs was 0.63"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{paste0}\NormalTok{(}\StringTok{"The R^2 of strikeouts and runs was "}\NormalTok{, }\KeywordTok{round}\NormalTok{(}\KeywordTok{cor}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{strikeouts,mlb11}\OperatorTok{$}\NormalTok{runs)}\OperatorTok{^}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "The R^2 of strikeouts and runs was 0.17"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{paste0}\NormalTok{(}\StringTok{"The R^2 of wins and runs was "}\NormalTok{, }\KeywordTok{round}\NormalTok{(}\KeywordTok{cor}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{wins,mlb11}\OperatorTok{$}\NormalTok{runs)}\OperatorTok{^}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "The R^2 of wins and runs was 0.36"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{paste0}\NormalTok{(}\StringTok{"The R^2 of stolen bases and runs was "}\NormalTok{, }\KeywordTok{round}\NormalTok{(}\KeywordTok{cor}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{stolen_bases,mlb11}\OperatorTok{$}\NormalTok{runs)}\OperatorTok{^}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "The R^2 of stolen bases and runs was 0"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{strikeouts,mlb11}\OperatorTok{$}\NormalTok{runs)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{REGISTEJH-simple_regression_files/figure-latex/unnamed-chunk-6-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{m2<-}\KeywordTok{lm}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{runs}\OperatorTok{~}\NormalTok{mlb11}\OperatorTok{$}\NormalTok{strikeouts)}
+\KeywordTok{summary}\NormalTok{(m2)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = mlb11$runs ~ mlb11$strikeouts)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -132.27  -46.95  -11.92   55.14  169.76 
+## 
+## Coefficients:
+##                   Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)      1054.7342   151.7890   6.949 1.49e-07 ***
+## mlb11$strikeouts   -0.3141     0.1315  -2.389   0.0239 *  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 76.5 on 28 degrees of freedom
+## Multiple R-squared:  0.1694, Adjusted R-squared:  0.1397 
+## F-statistic: 5.709 on 1 and 28 DF,  p-value: 0.02386
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{mlb11}\OperatorTok{$}\NormalTok{predicted<-}\KeywordTok{predict}\NormalTok{(m2)}
+\NormalTok{mlb11}\OperatorTok{$}\NormalTok{residual<-}\KeywordTok{residuals}\NormalTok{(m2)}
+
+\KeywordTok{ggplot}\NormalTok{(mlb11,}\DataTypeTok{mapping =} \KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ strikeouts))}\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{y =}\NormalTok{ runs))}\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{y =}\NormalTok{ predicted),}\DataTypeTok{size=} \FloatTok{1.5}\NormalTok{, }\DataTypeTok{alpha =} \FloatTok{.2}\NormalTok{)}\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_segment}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{xend =}\NormalTok{ strikeouts,}\DataTypeTok{yend =}\NormalTok{ predicted,}\DataTypeTok{y =}\NormalTok{ runs),}\DataTypeTok{linetype =} \DecValTok{2}\NormalTok{, }\DataTypeTok{color =} \StringTok{'blue3'}\NormalTok{)}\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_bw}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{REGISTEJH-simple_regression_files/figure-latex/unnamed-chunk-7-1.pdf}
+
+\begin{itemize}
+\tightlist
+\item
+  Now examine the three newer variables. These are the statistics used
+  by the author of \emph{Moneyball} to predict a teams success. In
+  general, are they more or less effective at predicting runs that the
+  old variables? Explain using appropriate graphical and numerical
+  evidence. Of all ten variables we've analyzed, which seems to be the
+  best predictor of \texttt{runs}? Using the limited (or not so limited)
+  information you know about these baseball statistics, does your result
+  make sense?
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{paste0}\NormalTok{(}\StringTok{"The R^2 of new_slug and runs was "}\NormalTok{, }\KeywordTok{round}\NormalTok{(}\KeywordTok{cor}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{new_slug,mlb11}\OperatorTok{$}\NormalTok{runs)}\OperatorTok{^}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "The R^2 of new_slug and runs was 0.9"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{paste0}\NormalTok{(}\StringTok{"The R^2 of new_onbase and runs was "}\NormalTok{, }\KeywordTok{round}\NormalTok{(}\KeywordTok{cor}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{new_onbase,mlb11}\OperatorTok{$}\NormalTok{runs)}\OperatorTok{^}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "The R^2 of new_onbase and runs was 0.85"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{paste0}\NormalTok{(}\StringTok{"The R^2 of new_obs and runs was "}\NormalTok{, }\KeywordTok{round}\NormalTok{(}\KeywordTok{cor}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{new_obs,mlb11}\OperatorTok{$}\NormalTok{runs)}\OperatorTok{^}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "The R^2 of new_obs and runs was 0.93"
+\end{verbatim}
+
+\begin{itemize}
+\tightlist
+\item
+  Check the model diagnostics for the regression model with the variable
+  you decided was the best predictor for runs.
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{new_obs,mlb11}\OperatorTok{$}\NormalTok{runs)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{REGISTEJH-simple_regression_files/figure-latex/unnamed-chunk-9-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{m2<-}\KeywordTok{lm}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{runs}\OperatorTok{~}\NormalTok{mlb11}\OperatorTok{$}\NormalTok{new_obs)}
+\KeywordTok{summary}\NormalTok{(m2)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = mlb11$runs ~ mlb11$new_obs)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -43.456 -13.690   1.165  13.935  41.156 
+## 
+## Coefficients:
+##               Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)    -686.61      68.93  -9.962 1.05e-10 ***
+## mlb11$new_obs  1919.36      95.70  20.057  < 2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 21.41 on 28 degrees of freedom
+## Multiple R-squared:  0.9349, Adjusted R-squared:  0.9326 
+## F-statistic: 402.3 on 1 and 28 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot_ss}\NormalTok{(mlb11}\OperatorTok{$}\NormalTok{new_obs,mlb11}\OperatorTok{$}\NormalTok{runs)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{REGISTEJH-simple_regression_files/figure-latex/unnamed-chunk-10-1.pdf}
+
+\begin{verbatim}
+## Click two points to make a line.                                
+## Call:
+## lm(formula = y ~ x, data = pts)
+## 
+## Coefficients:
+## (Intercept)            x  
+##      -686.6       1919.4  
+## 
+## Sum of Squares:  12837.66
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{mlb11}\OperatorTok{$}\NormalTok{predicted<-}\KeywordTok{predict}\NormalTok{(m2)}
+\NormalTok{mlb11}\OperatorTok{$}\NormalTok{residual<-}\KeywordTok{residuals}\NormalTok{(m2)}
+
+\KeywordTok{ggplot}\NormalTok{(mlb11,}\DataTypeTok{mapping =} \KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ new_obs))}\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{y =}\NormalTok{ runs))}\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{y =}\NormalTok{ predicted),}\DataTypeTok{size=} \FloatTok{1.5}\NormalTok{, }\DataTypeTok{alpha =} \FloatTok{.2}\NormalTok{)}\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_segment}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{xend =}\NormalTok{ new_obs,}\DataTypeTok{yend =}\NormalTok{ predicted,}\DataTypeTok{y =}\NormalTok{ runs),}\DataTypeTok{linetype =} \DecValTok{2}\NormalTok{, }\DataTypeTok{color =} \StringTok{'blue3'}\NormalTok{)}\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_bw}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{REGISTEJH-simple_regression_files/figure-latex/unnamed-chunk-10-2.pdf}
+
+The new observations turned out to be a better predictor based on the
+much higher r\^{}2 value and the reliable spread around the regression
+line.
+
+\end{document}

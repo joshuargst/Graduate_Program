@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/541179/38aa0182c4044aa2971e36631eada56a
+bundleId: https://api.rpubs.com/api/v1/document/541179/38aa0182c4044aa2971e36631eada56a
+url: http://rpubs.com/joshuargst/541179
+when: 1571615378.26395

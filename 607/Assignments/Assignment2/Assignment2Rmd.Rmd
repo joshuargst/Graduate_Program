@@ -1,0 +1,45 @@
+---
+title: "Assignment2"
+author: "Joshua Registe"
+date: "9/7/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Load librarys needed to connect to mySQL database
+
+```{r libraries}
+library(dbConnect)
+library(RMySQL)
+```
+
+
+The following established a connection between the msql server and R. the dbname (database name) is set by the sql script. This connection will vary for others on seperate machines and the password and user must be set within the script appropriately. Also note, this script will work if the MySQL Server was installed with Legacy Authentification Method. Compatible with MySQL 5.x. The newer authentification method is not yet supported without other modifications to the system not within the scope of this assignment.
+```{r, include=FALSE}
+username <- "root"
+SQLpassword <- "microlab10"
+hostname <- "localhost"
+```
+
+
+
+```{r}
+# user, password and hostname hidden in r script
+connection = dbConnect(MySQL(),user = username, password = SQLpassword, dbname = 'database1', host = hostname, port = 3306)
+```
+
+
+The following script creates an sql query that will be used to extract data from the MySQL connection that has been established in R. The table is then printed as an output.
+
+
+```{r}
+query1 = "SELECT * from movierankings"
+movie.survey<-dbGetQuery(connection,query1)
+
+movie.survey
+```
+

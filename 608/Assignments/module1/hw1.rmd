@@ -1,0 +1,101 @@
+---
+title: "R Notebook"
+Author: "Joshua Registe"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+**Principles of Data Visualization and Introduction to ggplot2**
+
+I have provided you with data about the 5,000 fastest growing companies in the US, as compiled by Inc. magazine. lets read this in:
+
+```{r}
+library(dplyr)
+inc <- read.csv("https://raw.githubusercontent.com/charleyferrari/CUNY_DATA_608/master/module1/Data/inc5000_data.csv", header= TRUE)
+
+```
+
+And lets preview this data:
+
+```{r}
+
+head(inc)
+
+```
+```{r}
+
+summary(inc)
+
+```
+
+Think a bit on what these summaries mean. Use the space below to add some more relevant non-visual exploratory information you think helps you understand this data:
+
+```{r}
+
+# Insert your code here, create more chunks as necessary
+str(inc)
+top_n(inc,-10,Rank)
+unique(inc$Industry)
+
+```
+
+## Question 1
+
+Create a graph that shows the distribution of companies in the dataset by State (ie how many are in each state). There are a lot of States, so consider which axis you should use. This visualization is ultimately going to be consumed on a 'portrait' oriented screen (ie taller than wide), which should further guide your layout choices.
+
+```{r}
+
+# Answer Question 1 here
+library(tidyverse)
+
+ggplot(inc)+geom_histogram(aes(x=State), stat = "count")+coord_flip()+theme_bw()
+
+
+```
+
+## Quesiton 2
+
+Lets dig in on the state with the 3rd most companies in the data set. Imagine you work for the state and are interested in how many people are employed by companies in different industries. Create a plot that shows the average and/or median employment by industry for companies in this state (only use cases with full data, use R's `complete.cases()` function.) In addition to this, your graph should show how variable the ranges are, and you should deal with outliers.
+
+```{r}
+
+# Answer Question 2 here
+
+
+
+inc%>%
+  group_by(State)%>%
+  count(State)%>%arrange(-n)%>%as.data.frame()%>%
+  slice(3)
+inc_adj<-inc[complete.cases(inc)==TRUE,]
+# New York has the 3rd most companies
+  
+inc_adj%>% filter(State=="NY")%>%
+  ggplot()+geom_boxplot(mapping = aes(x = Industry, y = Employees),fill = "grey90",outlier.shape = NA)+coord_flip(ylim = quantile(filter(inc_adj,State=="NY")$Employees, c(0.1,.98), na.rm = T))+theme_bw()
+  
+
+```
+
+## Question 3
+
+Now imagine you work for an investor and want to see which industries generate the most revenue per employee. Create a chart that makes this information clear. Once again, the distribution per industry should be shown.
+
+```{r}
+
+
+#which industry from NY generates the most revenue
+inc_adj$Revenue_Per_Employee<-inc_adj$Revenue/inc_adj$Employees
+
+inc_adj%>% filter(State=="NY")%>%
+  ggplot()+geom_boxplot(mapping = aes(x = Industry, y = Revenue_Per_Employee),fill = "grey90",outlier.shape = NA)+coord_flip(ylim = quantile(filter(inc_adj,State=="NY")$Revenue_Per_Employee, c(0.1,.99), na.rm = T))+theme_bw()+
+  ggtitle("Revenue Per Employee in NY")
+
+
+#which industry shows from all Locations generate the most revenue
+inc_adj%>%
+  ggplot()+geom_boxplot(mapping = aes(x = Industry, y = Revenue_Per_Employee),fill = "grey90",outlier.shape = NA)+coord_flip(ylim = quantile(inc_adj$Revenue_Per_Employee, c(0.1,.98), na.rm = T))+theme_bw()+ggtitle("Revenue Per Employee in all Locations")
+
+```
+
+From this we can see that the industries with the most revenue per employee include computer hardware, energy, logistics & transport as well as food & beverage. Although these industries show larger ranges of revenue/employee, the industry with the highest median for all locations is the Computer Hardware industry. Its also very interesting to see how this distribution is different when looking at NY only. It is quiet noticeable how much more skewed some industries are in terms of revenue/employee such as logistics & transportation as well as energy. although energy has a interquartile range that shows greater maximum revenues (minus outliers), the median is still in the ball park of most other industries. 

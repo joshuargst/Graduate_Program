@@ -1,0 +1,185 @@
+---
+title: "TidyVerseAssignment"
+author: "Joshua Registe"
+date: "12/1/2019"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+    collapsed: false
+    number_sections: true
+---
+---
+
+
+## R Markdown
+
+# Part I
+
+```{r cars}
+library(dplyr)
+library(tidyverse)
+library(fivethirtyeight)
+```
+
+
+the package "dplyr" has many functions used for data manipulation and provides a set of verbs that allow you to perform helpful transformations. This includes: "Mutate", "select" "filter", "summarise", "arrange","group_by", "order_by" and many more. This Vignette will demonstrate the intent behind these functions and how to apply them.
+
+<br>
+<br>
+The dataset we will be working with is from the "FiveThirtyEight" package called "airlinesafety. this data set is shown below.
+
+
+```{r}
+airline_safety
+str(airline_safety)
+```
+
+
+## Select
+
+select - This function allows you to select specific a variables from a dataset, for example, if we wanted to select just the "airline" fieldn and "incl_reg_subsidiaries" field we would perform the following operation:
+
+
+```{r}
+airline_safety%>% select(airline,incl_reg_subsidiaries)
+```
+
+
+## Filter
+Filter allows us to drill deeper into our dataset and retain subsets of that data, for example, if we wish to extract only True values of "incl_reg_subsidiaries we would perform the following operation:
+
+
+```{r}
+airline_safety%>% filter(incl_reg_subsidiaries==TRUE)
+```
+
+## Summarise
+
+summarise is a tool that allows us to compute statistics or custom functions on variables within our dataset. an example of this is shown below by computing both the mean, and the number of observations on safety incidents that occurred between the years 2000 and 2014.
+
+```{r}
+airline_safety %>% summarise(mean = mean(incidents_00_14), n= n())
+```
+
+## Mutate 
+Mutate is a tool that allows us to transform our dataset using functions and transformations that we desire. For example, on this airline dataset we can add incidents that occured between 2000 and 2014 (variable "incidents_00_14) with incidents between 1985 and 1999
+```{r}
+airline_safety %>% 
+  mutate(All_Incidents = incidents_85_99+incidents_00_14) %>% 
+  select(All_Incidents)
+```
+
+## Group By
+
+Group_by is a function within Dplyr that allows users to perform summarisations or transformations on groups of data. This is useful in understanding subsets of data rather than the entire dataset. An example is shown below on the airline_safety dataset where we group by the logical vector "incl_reg_subsidiaries, and find the sum of incidents based on companies that include subsidiaries vs not. Mutate does not alter the shape of the dataframe, but the grouping is done in memory and can be shown as a separate column as done below. Tidyverse also has an enormous library of functions and a powerful visualization library named ggplot2. a sample plot of the dataset is shown below by plotting the dataframe above
+
+```{r}
+airline_safety %>% 
+  mutate(All_Incidents = incidents_85_99+incidents_00_14) %>% 
+  group_by(incl_reg_subsidiaries,sum= sum(All_Incidents))
+
+airline_safety %>% ggplot(aes(x=airline,fatal_accidents_00_14, y = fatalities_00_14))+
+  geom_col(aes(fill = incl_reg_subsidiaries))+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90))+coord_flip()+
+  labs(title = "Fatalities By Airline",
+       x = "Airline",
+       y = "Fatalities from 2000 to 2014",
+       fill = "Has Subsidiary?")
+```
+
+
+# Part 2
+
+
+## Mael's Code
+
+## Rpubs link: http://rpubs.com/ssufian/548044
+
+## Github: https://github.com/ssufian/FALL2019TIDYVERSE/blob/master/Data-607-Tidyverse-Project-orig.Rmd
+
+
+--------------------------------------------------------------------------------
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Problem Statement:
+
+In this assignment, we will practice collaborating around a code project with Github as a class.
+
+Using several TidyVerse packages, and the "How Popular is Trump?"  dataset from
+
+fivethirtyeight.com, I’m going to show a programming sample “vignette” that demonstrates how to use the
+
+capabilities of ggplot2, dplyr, readr packages with this particular dataset.
+
+
+```{r message=FALSE, warning=FALSE}
+# Load
+library("tidyverse")
+library(ggplot2)
+library(dplyr)
+```
+
+## Using readr to read data from a csv file (Github site)
+
+
+
+```{r}
+polls <- read_csv("https://raw.githubusercontent.com/ssufian/Data_607/master/approval_topline.csv")
+polls1 <- read_csv('https://raw.githubusercontent.com/ssufian/Data_607/master/polling_data.csv')
+```
+
+##  Using ggplot2 to visualizae data; with pipe operation %>% from dplyr
+
+```{r}
+polls1 <- as_tibble(polls1)
+```
+
+## Bar Charts of Trump's approval/disapproval ratings by pollster types shown below:
+
+```{r}
+polls1 %>% ggplot(aes(x=pollster, y=adjusted_approve, fill=pollster))+
+  geom_bar(stat = "identity", position = "dodge") + 
+  guides(fill = FALSE) +
+  ggtitle("Trump's approval ratings by Pollster types")+ 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+polls1 %>% ggplot(aes(x=pollster, y=adjusted_disapprove, fill=pollster))+
+  geom_bar(stat = "identity", position = "dodge") + 
+  guides(fill = FALSE) +
+  ggtitle("Trump's disapproval ratings by Pollster types")+ 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+
+## Trumps Approval/Dis-approval ratings by voter types:
+
+```{r}
+polls1 %>% ggplot(aes(x=subgroup, y=adjusted_approve, fill=subgroup))+
+  geom_bar(stat = "identity", position = "dodge") + 
+  guides(fill = FALSE) +
+  ggtitle("Trump's approval ratings by voter types")+ 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+polls1 %>% ggplot(aes(x=subgroup, y=adjusted_disapprove, fill=subgroup))+
+  geom_bar(stat = "identity", position = "dodge") + 
+  guides(fill = FALSE) +
+  ggtitle("Trump's disapproval ratings by voter types")+ 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+
+
+##Joshua's Extension
+
+Adding an extension to Sufian's code using a dplyr function to average out approval ratings by group as a new column.
+
+```{r}
+
+polls %>% group_by(subgroup)%>%
+  mutate(Average_of_Approval_Estimate = mean(approve_estimate))
+  
+  
+```

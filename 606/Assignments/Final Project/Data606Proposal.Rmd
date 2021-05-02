@@ -1,0 +1,66 @@
+---
+title: "Data606 Project Proposal"
+author: "Joshua Registe"
+date: "3/29/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+Research Question <br> 
+In the project proposal i intend to use the dataset from fivethirtyeight called "hate_crimes". The dataset is described below. The research question i would like to answer is are their any significant relationships between hatecrimes in the US to other parameters in the dataset such as unemployment, median household income, race, etc.
+<br><br>
+
+```{r}
+library(fivethirtyeight)
+library(DT)
+library(GGally)
+colnames((hate_crimes))
+
+
+
+```
+
+What are the cases and how many are there?<br>
+
+```{r}
+length(hate_crimes$avg_hatecrimes_per_100k_fbi)
+
+```
+there are about 51 cases , 1 in each of the US states and the district of columbia 
+<br><br>
+Describe the method of data collection<br>
+the method of data collection is simply using a dataset from the fivethirtyeight package in R which summarizes mean hate crime by state
+
+<br>
+```{r}
+datatable(hate_crimes)
+
+```
+
+
+What type of study is this?<br>
+This is an observational study since we are not creating an experiment to test any hypothesis. We are taking data that has been produced and collected over time and using this for our downstream analyses.
+<br>
+<br>
+Data source: 
+FiveThiryEight<br>
+<https://github.com/fivethirtyeight/data>
+<br>
+<br>
+
+Response: what is the response variable, and what type is it (numerical/categorical)?<br>
+The response variable for this is numerical and is the variable hatecrime per 100k
+<br>
+The explanatory variables for this dataset are median house income, white poverty, non sitizen, population and presidential vote.
+<br><br>
+summary statistics for the dataset are shown below:
+```{r}
+library(Hmisc)
+describe(hate_crimes)
+```
+

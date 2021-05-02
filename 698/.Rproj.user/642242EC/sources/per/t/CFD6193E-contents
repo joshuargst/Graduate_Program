@@ -1,0 +1,256 @@
+---
+title: "698FinalProject"
+author: "Joshua Registe"
+date: "4/20/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+library(xlsx)
+library(lubridate)
+library(RColorBrewer)
+library(scales)
+library(tidymodels)
+library(Hmisc)
+library(skimr)
+library(ggcorrplot)
+#library(rpart)
+#library(rpart.plot)
+#library(zoo)
+library(janitor)
+library(tidyselect)
+library(outliers)
+library(stringr)
+```
+
+
+```{r Custom Functions}
+
+getSeason <- function(DATES) {
+  #funtion to return the season of a given date
+  WS <- as.Date("2012-12-21", format = "%Y-%m-%d") # Winter Solstice
+  SE <- as.Date("2012-3-20",  format = "%Y-%m-%d") # Spring Equinox
+  SS <- as.Date("2012-6-20",  format = "%Y-%m-%d") # Summer Solstice
+  FE <- as.Date("2012-9-22",  format = "%Y-%m-%d") # Fall Equinox
+  # Convert dates from any year to 2012 dates
+  d <- as.Date(strftime(DATES, format="2012-%m-%d"))
+  
+  ifelse (d >= WS | d < SE, "Winter",
+          ifelse (d >= SE & d < SS, "Spring",
+                  ifelse (d >= SS & d < FE, "Summer", "Fall")))
+}
+
+
+```
+
+
+```{r Custom Constants}
+#PoP represents the period of performance for them to meet chlorination
+PoP<-as.Date(c("11/01/2015","11/01/2016"),"%m/%d/%Y")
+# Dechlor represents the date they upgraded their chlorination facility
+Dechlor<-as.Date(c("03/01/2016"),"%m/%d/%Y")
+# Theme for ggplots
+defaulttheme<-theme(panel.background = element_blank(),
+                            panel.border = element_rect(color = "black", fill=NA))
+
+```
+
+Importing the data and removing Flow as it follows different time series stamp
+```{r importing data}
+# this chunk just focuses on importing the data
+# 
+path <- "data/raw/CombinedDataSetsTrimmed.xlsx"
+sheetnames <- excel_sheets(path)
+mylist <- lapply(excel_sheets(path), read_excel, path = path)
+# name the dataframes
+names(mylist) <- sheetnames
+rm(path,sheetnames)
+
+mylist<-mylist[1:7]
+
+```
+
+
+```{r Wide Conversion}
+# Over here we simply join all the items from the list and get the season of Date
+ PR_Wide<-mylist %>% reduce(left_join, by = "Date")
+
+PR_Wide$Season<-getSeason(as.Date(PR_Wide$Date,format = "%Y-%m-%d"))
+
+PR_Wide %>% select(function(x) is.numeric(x)) %>% 
+  cor(method = "pearson") %>% as.data.frame() %>%  
+  rownames_to_column() %>% 
+  pivot_longer(cols = -rowname, names_to = "Param", values_to = "Value") %>% 
+  filter(is.na(Value)==F) %>% 
+  filter(!(Param==rowname)) %>% 
+  arrange(-Value) %>% 
+  View
+
+```
+
+
+```{r Distribution Exploration}
+
+PR_Wide %>% 
+ggplot(aes(x = Temperature__C_InfluentMinimum, SEWAGE_pHRAWMIN))+
+  geom_point()
+
+
+PR_Wide %>% 
+DataExplorer::plot_histogram()
+
+
+DataExplorer::plot_missing(df)
+
+
+
+```
+```{r Defining Data}
+PR_Wide$Chlorineexceedance<-if_else(PR_Wide$Chlorine_ResidualEffluent__mgperL_Daily_Average>0.52,"Exceedance","Non_Exceedance") 
+
+PR_Wide<-PR_Wide %>% 
+  filter(Date>=as.Date(Dechlor)) %>%  
+  mutate_if(is.character,factor)
+
+
+missingrow_limit<-.5*nrow(PR_Wide)
+retain_row<-apply(PR_Wide, MARGIN = 1, function(y) sum(length(which(is.na(y))))) < missingrow_limit
+PR_Wide[!retain_row,]
+PR_Wide<- PR_Wide[retain_row,]
+
+missingcol_limit<-.6*ncol(PR_Wide)
+retain_col<-apply(PR_Wide, MARGIN = 2, function(y) sum(length(which(is.na(y))))) < missingcol_limit
+
+names(PR_Wide[,!retain_col])
+
+df<-PR_Wide[,retain_col,]
+
+names(df)<- str_replace_all(names(df),"\\.+","")
+
+default_removals<-
+  c("CHLORINE_RESIDUALMAX",
+    "CHLORINE_RESIDUALSMPL",
+    "Sheet",
+    "Date",
+    "Day",
+    "DAY",
+    "Year",
+    "Time",
+    "ResidualperTarget",
+    "CHL_RES_AT_TIME_OF_FECAL_SAMPLE",
+    "Date")
+
+df1<-df %>% 
+  select(-c(default_removals, 
+         Chlorine_ResidualEffluent__mgperL_Daily_Average))
+
+df2<-df %>% 
+  select(-c(Chlorineexceedance,
+            default_removals))
+```
+
+
+```{r}
+(baseline<-prop.table(table(df$Chlorineexceedance)))
+
+set.seed(1)
+Datasplit<- initial_split(df1, prop = .75, strata = Chlorineexceedance)
+Datatrain<-training(Datasplit)
+datatest<-testing(Datasplit)
+datacv<- vfold_cv(Datatrain, v = 10, strata = Chlorineexceedance)
+parsnip::show_engines("rand_forest")
+
+tree_engine<-
+  decision_tree(mode = "classification") %>% 
+  set_engine(engine = "rpart")
+?ranger
+tree_engine<-
+  rand_forest(mode = "classification") %>% 
+  set_engine(engine = "ranger", importance = 'impurity')
+
+dt_wf<-
+  workflow() %>% 
+  add_model(tree_engine)
+
+
+
+
+```
+
+
+```{r}
+
+?themis::step_downsample()
+dt_recipe1<-
+  recipe(Chlorineexceedance ~ ., data = Datatrain) %>% 
+  themis::step_downsample(Chlorineexceedance, skip = F) %>% 
+  step_naomit(all_outcomes()) %>%
+  step_nzv(all_predictors(),-all_outcomes()) %>% 
+  step_corr(all_numeric(), threshold = 0.7) %>%
+  step_other(all_nominal(), -all_outcomes()) %>% 
+  step_impute_median(all_numeric()) %>% 
+  step_impute_mode(all_nominal(), -all_outcomes()) %>% 
+  step_BoxCox(all_numeric()) %>% 
+  step_dummy(all_nominal(), -all_outcomes()) #%>% 
+
+
+a<-dt_recipe1 %>% prep() %>% bake(Datatrain)
+
+table(a$Chlorineexceedance)
+dt_wf1<-
+  workflow() %>% 
+  add_model(tree_engine) %>% 
+  add_recipe(dt_recipe1)
+
+
+wf1_results<-
+dt_wf1 %>% fit_resamples(resamples= datacv, 
+                           metrics = metric_set(roc_auc, accuracy, sensitivity, specificity,kap),
+                           control = control_resamples(save_pred = T))
+
+
+dtmodel<-
+  dt_wf1 %>% fit(data = Datatrain)
+sort(-importance(dtmodel$fit$fit$fit))
+
+caret::varImp(dtmodel$fit$fit$fit) %>% mutate(Feature = rownames(.)) %>% 
+  ggplot(mapping = aes(x =fct_reorder(Feature,Overall), y = Overall))+
+  geom_col(fill ="skyblue3")+
+  coord_flip()+
+  defaulttheme+
+  labs(x = "Importance",
+       y = "Feature",
+       title = "Variable Importance")
+
+```
+
+
+```{r}
+wf1_results %>% collect_metrics(summarize = T)
+
+All_metrics<-data.frame()
+wf_res_function<-
+  function(wf_results, modelname){
+    #this function calls returns the ROC_AUC, accuracy, and kap of a cross validated model result
+    
+    All_metrics %>% bind_rows(
+      collect_metrics(wf_results, summarize = T) %>%
+      mutate(model = modelname))
+  }
+
+All_metrics<-
+wf_res_function(wf1_results,"Model 1")
+
+training_predictions<-
+predict(dtmodel,Datatrain, type = "class") #%>% 
+  bind_cols(Datatrain$Chlorineexceedance) %>% 
+  rename("Chlorineexceedance"= "...2") %>% 
+  mutate(set = "Training")
+
+
+```
+
+

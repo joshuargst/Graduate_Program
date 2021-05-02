@@ -1,0 +1,21 @@
+[
+  {
+    "Book": "Harry Potter and the Cursed Child",
+    "Author1": "J.K. Rowling",
+    "Author2": "John Tiffany",
+    "Genre": "Fantasy",
+    "Year_Published": 2016
+  },
+  {
+    "Book": "How to win Friends & Influence People",
+    "Author1": "Dale Carnegie",
+    "Genre": "Non-fiction",
+    "Year_Published": 2011
+  },
+  {
+    "Book": "The Giver",
+    "Author1": "Lois Lowry",
+    "Genre": "Novel",
+    "Year_Published": 1993
+  }
+]

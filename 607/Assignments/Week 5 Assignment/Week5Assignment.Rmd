@@ -1,0 +1,125 @@
+---
+title: "Week 5 Assignment"
+author: "Joshua Registe"
+date: "9/28/2019"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    collapsed: false
+    number_sections: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dbConnect)
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+
+```
+
+
+
+```{r, include = FALSE}
+connection = dbConnect(MySQL(),user = 'root', password = 'microlab10', dbname = 'database1', host = 'localhost', port = 3306)
+
+```
+
+
+# CSV Creation and Import
+
+
+The airline information data is being imported from a MySQL database. information on username, password and host hidden for security. The following code prints the table required for the assignment.
+
+```{r}
+query1 = "SELECT * from assignment5table"
+airline.info<-dbGetQuery(connection,query1)
+
+airline.info
+
+
+```
+
+
+# Using tidyr
+
+
+To properly visualize our information, this data is best represented in a long format and so tidyr is used with the function "gather" in order to achieve this as shown below.  
+
+
+```{r}
+
+airline.info<-airline.info[c(2:length(airline.info))]
+```
+
+
+```{r}
+airline.info.long<-gather(airline.info,key = "City", value = "Count",-Airline,-Arrival_Status)
+airline.info.long
+```
+
+
+# Analysis & Conclusions
+
+we can begin to look at this data by simply comparing the airlines and how many of their planes are delayed vs on time.
+```{r}
+airline.info.long %>%
+  ggplot(aes(y = Count, x = Airline))+geom_col(aes(fill = Arrival_Status), position = "stack")
+```
+
+According to the figure above, the AM West airline carries many more flights than the Alaska airline. Additionally the proportion of of flights that are delayed by airline seem to be comparable but we will check this with further analysis.
+
+If we break this out by City, we'll notice that Phoenix, Arizona is the primary source of flights for the AM West airline by a large margin; while Seattle, Washington was the primary source of flights for Alaska airlines. 
+
+```{r}
+airline.info.long %>%
+  ggplot(aes(y = Count, x = City))+geom_col(aes(fill = Arrival_Status), position = "dodge")+facet_grid(Airline~.)
+
+```
+
+
+To assess which airline has a higher probability of delays, we can use dplyr to group these by city and airline and determine the probability that an airline will have a delay based on this current dataset. the following table shows these probabilities.
+
+```{r}
+ airline.info.long<-airline.info.long%>%
+    group_by(Airline,City)%>%mutate(Occurance_Probability= Count/sum(Count))
+
+airline.info.long[c(1,2,3,5)]
+```
+
+This can be visualized for the airlines as a whole - showing which airline has a higher probability of having a delay as shown in the figure below. This shows that Alaska Airlines is about 5% less likely to have a delay than AM West.
+
+```{r}
+airline.info.long%>% filter(Arrival_Status == "delayed")%>%
+    ggplot(aes(y = Occurance_Probability, x = Airline))+
+    stat_summary(geom = "bar", fun.y = "mean",alpha = 0.6, aes(fill = Airline), color = "black")+
+    labs(title = "Probability of Delay by Airline",
+        y = "Delay Probability")+ 
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1))
+  
+```
+
+
+Finally, we can break this out by city and assess the probabilities of a delay by city to see if there are any particular cities that may be skewing delay probabilities. 
+
+```{r}
+airline.info.long%>% filter(Arrival_Status == "delayed")%>%
+    ggplot(aes(y = Occurance_Probability, x = Airline))+
+    stat_summary(geom = "bar", fun.y = "mean",alpha = 0.6, aes(fill = Airline), color = "black")+
+    labs(title = "Probability of Delay by Airline for Every City",
+         y = "Delay Probability")+facet_grid(~City)+ 
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+  theme(axis.text.x =element_text(angle = 90, hjust = 1))
+```
+
+As shown in the figure above, in all cities for this dataset, the probability that the Alaskan airline will be delayed is lower than the probability that AM West airline will be delayed. Other notable things:
+
+<p style="margin-left: 40px"> - Phoenix had the most amount of flights for Alaskan airlines, but also has the lowest  probability of being delayed</p>
+
+<p style="margin-left: 40px"> - San Franscisco had the highest probability of a delayed flights reaching just above 15% on
+Alaskan airlines and close to 30% on AM West, nearly double.</p>
+
+

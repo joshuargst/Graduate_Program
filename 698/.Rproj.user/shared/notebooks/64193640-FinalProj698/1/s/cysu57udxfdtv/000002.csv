@@ -1,0 +1,35 @@
+"0","mylist <- lapply(excel_sheets(path), read_excel, path = path)
+"
+"2","New names:
+* Fecal_ColiformEffluentNo_per100_mL -> Fecal_ColiformEffluentNo_per100_mL...21
+* Fecal_ColiformEffluentNo_per100_mL -> Fecal_ColiformEffluentNo_per100_mL...22
+* EnterococcusEffluentNo_per100_mL -> EnterococcusEffluentNo_per100_mL...23
+* EnterococcusEffluentNo_per100_mL -> EnterococcusEffluentNo_per100_mL...24
+"
+"0","mylist <- lapply(excel_sheets(path), read_excel, path = path)"
+"2","New names:
+* Fecal_ColiformEffluentNo_per100_mL -> Fecal_ColiformEffluentNo_per100_mL...21
+* Fecal_ColiformEffluentNo_per100_mL -> Fecal_ColiformEffluentNo_per100_mL...22
+* EnterococcusEffluentNo_per100_mL -> EnterococcusEffluentNo_per100_mL...23
+* EnterococcusEffluentNo_per100_mL -> EnterococcusEffluentNo_per100_mL...24
+"
+"0","# name the dataframes"
+"0","names(mylist) <- sheetnames"
+"0","# name the dataframes"
+"0","names(mylist) <- sheetnames"
+"0","rm(path,sheetnames)"
+"0","names(mylist)"
+"1","[1]"
+"1"," ""dmrez2015-2019""   "
+"1"," ""PrecipitationData"""
+"1"," ""A.T.2015-2019""    "
+"1"," ""Nut_2015-2019""    "
+"1","
+"
+"1","[5]"
+"1"," ""Process2015-2019"" "
+"1"," ""Plant2015-2019""   "
+"1"," ""Hypo2015-2019""    "
+"1"," ""Flow2015-2019""    "
+"1","
+"

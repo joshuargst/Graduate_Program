@@ -1,0 +1,92 @@
+---
+title: "Week 7 Assignment"
+author: "Joshua Registe"
+date: "10/13/2019"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    collapsed: false
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r libraries}
+library(rvest)
+library(xml2)
+library(jsonlite)
+library(XML)
+library(kableExtra)
+```
+
+
+Files for different datatypes from chapters 2-4 of "Automated Data Collection" have been created and can be found on github here in json, xml, and html formats:
+<br>
+XML:
+<br>
+<https://raw.githubusercontent.com/joshuargst/Data607Week7/master/Books.xml>
+<br>
+HTML:
+<br>
+<https://raw.githubusercontent.com/joshuargst/Data607Week7/master/Books.html>
+<br>
+json:
+<br>
+<https://raw.githubusercontent.com/joshuargst/Data607Week7/master/Books.json>
+<br>
+
+# XML
+
+The XML file is concocted as shown below:
+```{r }
+
+books.xml<-read_xml("https://raw.githubusercontent.com/joshuargst/Data607Week7/master/Books.xml") %>%xmlParse()
+books.xml
+
+```
+
+
+
+The tables can be extracted via the "XML" package in r and the dataframe can be extracted as such:
+```{r}
+
+kable(xmlToDataFrame(books.xml))
+```
+
+
+# HTML
+
+The HTML file is concocted as shown below:
+```{r}
+Books.html<- read_html("https://raw.githubusercontent.com/joshuargst/Data607Week7/master/Books.html") 
+Books.html
+```
+
+tables from the file can be extracted via the "rvest" package in r as shown below:
+```{r}
+Books.html%>% html_table()%>% kable()
+```
+
+# JSON
+
+Tables from json files can be extracted via the "jsonlite" package and is shown in the following format below:
+```{r}
+read_json("https://raw.githubusercontent.com/joshuargst/Data607Week7/master/Books.json")
+
+```
+
+
+From within the jsonlite package, there are also ways to extract tabular information to be parsed out as shown below:
+```{r}
+kable(fromJSON("https://raw.githubusercontent.com/joshuargst/Data607Week7/master/Books.json"))
+```
+<br>
+<br>
+<br>
+<br>
+When using the proper packages and information parsers, the 3 dataframes come out identical despite what format the data originated from.
+

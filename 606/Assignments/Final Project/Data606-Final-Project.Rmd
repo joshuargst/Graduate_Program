@@ -1,0 +1,358 @@
+---
+title: "Data606 Project"
+author: "Joshua Registe"
+date: "3/29/2020"
+output:
+  html_document: 
+    code_folding: hide
+    toc: true
+    toc_float: true
+    collapsed: false
+    
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+```
+
+
+
+
+# Part 1 - Introduction
+
+Research Question <br> 
+
+In the project proposal I intend to use the dataset from fivethirtyeight called "hate_crimes". The dataset is described below. The research question i would like to answer is are their any significant relationships between hatecrimes in the US to other parameters in the dataset such as unemployment, median household income, race, etc.
+<br> 
+<br>
+A "hate crime" is defined as a crime that is based on a particular bias or prejudice. Several cases may be: African-Americans being policed differently than others potentially in fatal ways or, crimes against muslims or other islamic religious groups because of their faith, or crimes against those with specific sexual orientations. 
+<br> 
+This is an important question because in recent years there has been an uptick in recorded hate crimes. It is unclear if crime rates are increasing over time or if there is just more light being shed upon these situations due to the abundance of technology in today's society vs previous decades. Nonetheless, it is important to understand the relationship between hate crimes and other potential factors to be to take measures both politically and socially to mitigate the issue.
+<br> 
+
+# Part 2 - Data
+
+
+```{r}
+library(fivethirtyeight)
+library(DT)
+library(GGally)
+library(Hmisc)
+library(tidyverse)
+library(knitr)
+library(RColorBrewer)
+library(broom)
+colnames((hate_crimes))
+
+hatecrimes<-hate_crimes
+```
+
+<br>
+there are about 51 cases in this dataset is hatecrimes and has 2 metrics in this dataset:
+<br> **hate_crimes_per_100k_splc** - This represents the hate crimes per every 100,000 people 
+<br>  **avg_hatecrimes_per_100k_fbi** - This represents Average annual hate crimes per every 100,000 people
+<br>
+<br> It's important to note that these aggregated observations and the data is not granular to where provides each individual hate crime as an observation and information about it.
+<br>
+<br> The variables that are of interest will be most of the other variables in the dataset, these will be used as our predictor variables while hate crimes will be our response variable: 
+<br>  **median_house_inc ** - Median Household income for the year of 2016
+<br> **share_unemp_season ** - Share of the population that is unemployed
+<br>  **share_pop_metro ** - share of population that lives in a metropolitan area for the year of 2015
+<br>  **share_non_citizen ** - Share of the population that are not U.S. Citizens as of 2015
+<br>  **share_white_poverty ** - Share of white residents who live in poverty for 2015
+<br>  **gini_index ** - a measure of the distribution of income across income percentiles in a population
+<br>  **share_non_white ** - Share of the population that is not white for 2015
+<br>  **share_vote_trump ** - Share of 2016 U.S. presidential voters who voted for Donald Trump
+
+<br><br>
+This is an observational study because we are collecting historical data evaluating our hypothesis based on that. There will be no experimental design with placebo control groups and experimental groups. The scope of our inference will be generalized to the US population since this data provides a sample that is representative of every individual state. Because this is not a randomized control trial, we will not use these data to infer causality.
+
+
+
+# Part 3 - Exploratory data analysis
+
+
+
+The following data table below allows the user to look through the raw data set from fivethirtyeights. 
+```{r}
+datatable(hate_crimes)
+
+
+```
+
+## Visualizing the dataset and Conditions for inference
+<br>
+To do some exploratory analysis, We will employ tools that help us understand the distribution of our data, this includes providing summary stats accross all of the columns and 
+We have a wide version of the dataset but we will create a long version as well for ease of looking at different parameters in our dataset.
+<br>
+<br>
+Cycle through the tabs below to view the distribution and normality of our parameters in the dataset.
+
+
+## {.tabset .tabset-fade}
+
+### View Histogram of Data
+
+The histograms below show all of our potential predictor variables as well as our response variable (avg hate crimes). Most of the predictor variables follow a normal or close to normal distribution. there is some skewness in a few datasets due to some of the outliers such as in **gini_index**, **avghatecrimes_per100k_fbi**, and **hate_crimes_per_100k_splc** there are outliers that cause the data to seem right skewed. similarly outliers in **share_vote_trump** cause a left skewness in that distribution. 
+<br><br>
+We can infer from this that our linear models will:
+
+<br>1) Have near normal residuals
+<br>2) have constant variability
+<br><br>
+We will check for linearity and variablity around the residuals plot during downstream analysis
+
+
+```{r, fig.height=10}
+
+hatecrimes_long<-hatecrimes %>% 
+  pivot_longer(cols = 3:length(hatecrimes), names_to = "Parameter")
+
+
+hatecrimes_long %>% ggplot(mapping = aes(x = value, fill = Parameter))+
+  geom_histogram(alpha = 0.4)+
+  facet_wrap(Parameter~.,scales = 'free', ncol = 3)+
+  #geom_density(fill = NA, linetype = 2, na.rm=T)+
+  theme(panel.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill=NA),
+        panel.grid = element_blank(),
+        legend.position = "top",
+        legend.title = element_blank(),
+        strip.background =element_blank())
+
+```
+
+### View Density Plot of Data
+
+The density plots below similarly show all of the parameters but with a smoothed curve instead of a histogram to better see the skewness, peaks, and distributions of our parameters.Most of the predictor variables follow a normal or close to normal distribution. As stated in the histogram tab. See the QQ_plot tab to see how far these parameters deviated from the gaussian distribution. 
+
+We can infer from this that our linear models will:
+
+<br>1) Have near normal residuals
+<br>2) have constant variability
+<br><br>
+We will check for linearity and variablity around the residuals plot during downstream analysis
+
+```{r, fig.height=10}
+
+hatecrimes_long %>% ggplot(mapping = aes(x = value, fill = Parameter))+
+  #geom_histogram(alpha = 0.4)+
+  facet_wrap(Parameter~.,scales = 'free', ncol = 3)+
+  geom_density(fill = NA, linetype = 2, na.rm=T)+
+  theme(panel.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill=NA),
+        panel.grid = element_blank(),
+        legend.position = "top",
+        legend.title = element_blank(),
+        strip.background =element_blank())
+
+```
+
+
+### View QQPlot Plot of Data
+
+The QQ plots below similarly show all of the parameters but include the normal distribution __line__ overlaid with the data to show where and how far the parameters deviate from the mean of our parameters.Most of the predictor variables follow a normal or close to normal distribution. As stated in the histogram tab. See the QQ_plot tab to see how far these parameters deviated from the gaussian distribution. For the analyses downstream, we will assume that these parameters satisfy the conditions for normality on our regressions.
+
+We can infer from this that our linear models will:
+
+<br>1) Have near normal residuals
+<br>2) have constant variability
+<br><br>
+We will check for linearity and variablity around the residuals plot during downstream analysis
+
+```{r, fig.height=10}
+
+hatecrimes_long %>% ggplot(mapping = aes(sample = value))+
+  #geom_histogram(alpha = 0.4)+
+  stat_qq()+stat_qq_line()+
+  facet_wrap(Parameter~.,scales = 'free', ncol = 3)+
+  #geom_density(fill = NA, linetype = 2, na.rm=T)+
+  theme(panel.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill=NA),
+        panel.grid = element_blank(),
+        legend.position = "top",
+        legend.title = element_blank(),
+        strip.background =element_blank())
+
+```
+
+### Summary Statistics for Dataset
+
+summary statistics for the dataset are shown below:
+```{r}
+
+describe(hatecrimes)
+
+```
+
+Removing the one from out response vaoutlier:
+```{r}
+hatecrimes<-hatecrimes %>% 
+  filter(state!= "District of Columbia")
+```
+
+# Part 4 - Inference And Analysis
+
+```{r}
+responsevariable<- unique(hatecrimes_long$Parameter)[10]
+
+predictorvariables<-unique(hatecrimes_long$Parameter)[1:9]
+
+plottheme<-theme(panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid = element_blank())
+
+hatecrimeslm<-function(data,x,y){
+  linearM<-lm(formula(paste(y,"~",x)), data)
+  
+  residual<-residuals(linearM)
+  intercept<-round(linearM$coefficients[[1]],2)
+  slope<-round(linearM$coefficients[[2]],4)
+  adjr2<-round(summary(linearM)$r.squared,2)
+    #as.character(as.expression(eq)))
+  p_value<-round(summary(linearM)$coefficients[,4][[2]],3)
+  
+  
+  p1<-ggplot(data = data,mapping = aes_string(x, y))+
+    geom_point(pch = 21, color = "black", fill ="skyblue",alpha = 0.7,size =3 )+
+    geom_smooth(method = "lm")+
+    plottheme+
+    labs(subtitle = paste0("Y = ", intercept,"+",slope,"x",
+                          "\nR^2 = ", adjr2,
+                          "\nP-Value = ", p_value),
+         title = "Linear Model Plot")
+  
+  resplot<- augment(linearM)
+  
+  p2<-ggplot(resplot,aes(x = .fitted, y = .resid))+
+    geom_point(pch = 21, color = "black", fill ="skyblue",alpha = 0.7,size =3 )+
+    geom_segment(aes(x = .fitted,
+                     xend =.fitted,
+                     y = .resid,
+                     yend =0),
+                 linetype = 2,
+                 color = "red")+
+    geom_hline(yintercept = 0)+
+    plottheme+
+    labs(title = "Residuals Plot")
+  
+  print(p1)
+  print(p2)
+  print(summary(linearM))
+}
+
+
+
+```
+
+
+## Linear Regression {.tabset .tabset-fade}
+
+
+### Median Household Income
+```{r, fig.height=2.5}
+hatecrimeslm(hatecrimes,predictorvariables[1],responsevariable)
+```
+<br>
+<br>Null Hypothesis: There is no relationship between median household income and Hatecrimes/100k people
+<br>Alternate Hypothesis: There is a relationship between median household income and hatecrimes/100k people
+<br><br>
+Based on the above, we do notice that there is a slight trend but a weak correlation coeffient of 0.08. the P_value is also greater than 0.05 indicating that there is insufficient evidence to reject the null hypothesis and so we cannot conclude dependence.
+
+### Share of Unemployed
+```{r, fig.height=2.5}
+hatecrimeslm(hatecrimes,predictorvariables[2],responsevariable)
+```
+<br>
+<br>Null Hypothesis: There is no relationship between share of unemployed and Hatecrimes/100k people
+<br>Alternate Hypothesis: There is a relationship between share of unemployed income and hatecrimes/100k people
+<br><br>
+Based on the above, there is no visible trend and expectedly a weak correlation coeffient of 0.02. the P_value is also much greater than 0.05 indicating that there is insufficient evidence to reject the null hypothesis and so we cannot conclude dependence.
+
+### Share of Population in Metro-area
+```{r, fig.height=2.5}
+hatecrimeslm(hatecrimes,predictorvariables[3],responsevariable)
+```
+<br>
+<br>Null Hypothesis: There is no relationship between share of population living in a metro area and Hatecrimes/100k people
+<br>Alternate Hypothesis: There is a relationship between share of population living in a metro area and hatecrimes/100k people
+<br><br>
+Based on the above, There is no visible trend and expectedly a weak correlation coeffient of 0. the P_value is also much greater than 0.05 indicating that there is insufficient evidence to reject the null hypothesis and so we cannot conclude dependence.
+
+
+
+### Share Population with HS degree
+```{r, fig.height=2.5}
+hatecrimeslm(hatecrimes,predictorvariables[4],responsevariable)
+```
+
+<br>
+<br>Null Hypothesis: There is no relationship between share of population with a HS degree and Hatecrimes/100k people
+<br>Alternate Hypothesis: There is a relationship between share of population with a HS degree and hatecrimes/100k people
+<br><br>
+Based on the above, we do notice that there is a slight trend but a weak correlation coeffient of 0.18. the P_value is also less than 0.05 indicating that we do have sufficient evidence to support the r^2 of 0.18, although not very strong.
+
+
+### Share Population Non-Citizens
+```{r, fig.height=2.5}
+hatecrimeslm(hatecrimes,predictorvariables[5],responsevariable)
+```
+<br>
+<br>Null Hypothesis: There is no relationship between share of population who are non-citizens and Hatecrimes/100k people
+<br>Alternate Hypothesis: There is a relationship between share of population who are non-citizens and hatecrimes/100k people
+<br><br>
+Based on the above, There is no visible trend and expectedly a weak correlation coeffient of 0.01. the P_value is also much greater than 0.05 indicating that there is insufficient evidence to reject the null hypothesis and so we cannot conclude dependence.
+
+
+### Share of Population with White Poverty
+```{r, fig.height=2.5}
+hatecrimeslm(hatecrimes,predictorvariables[6],responsevariable)
+```
+<br>
+<br>Null Hypothesis: There is no relationship between share of population with white poverty and Hatecrimes/100k people
+<br>Alternate Hypothesis: There is a relationship between share of population  with white poverty and hatecrimes/100k people
+<br><br>
+Based on the above, There is no visible trend and expectedly a weak correlation coeffient of 0.01. the P_value is also much greater than 0.05 indicating that there is insufficient evidence to reject the null hypothesis and so we cannot conclude dependence.
+
+
+### Gini Index
+```{r, fig.height=2.5}
+hatecrimeslm(hatecrimes,predictorvariables[7],responsevariable)
+```
+<br>
+<br>Null Hypothesis: There is no relationship between the gini index and Hatecrimes/100k people
+<br>Alternate Hypothesis: There is a relationship between the gini index and hatecrimes/100k people
+<br><br>
+Based on the above, There is no visible trend and expectedly a weak correlation coeffient of 0.01. the P_value is also much greater than 0.05 indicating that there is insufficient evidence to reject the null hypothesis and so we cannot conclude dependence.
+
+### Share Population Non-White
+```{r, fig.height=2.5}
+hatecrimeslm(hatecrimes,predictorvariables[8],responsevariable)
+```
+<br>
+<br>Null Hypothesis: There is no relationship between share of population that is non-white and Hatecrimes/100k people
+<br>Alternate Hypothesis: There is a relationship between share of population that is non-white and hatecrimes/100k people
+<br><br>
+Based on the above, There is a very slight visible trend and a weak correlation coeffient of 0.07. the P_value is also slightly greater than 0.05 indicating that there is insufficient evidence to reject the null hypothesis and so we cannot conclude dependence.
+
+### Share Population Voted Trump
+```{r, fig.height=2.5}
+hatecrimeslm(hatecrimes,predictorvariables[9],responsevariable)
+```
+<br>
+<br>Null Hypothesis: There is no relationship between share of population that voted for Trump and Hatecrimes/100k people
+<br>Alternate Hypothesis: There is a relationship between share of population that voted for Trump and hatecrimes/100k people
+<br><br>
+Based on the above, There is a visible trend and expectedly correlation coeffient of 0.17. the P_value is also less than 0.05 indicating that there is sufficient evidence to reject the null hypothesis in favor of supporting the alternative but with a coefficient strength for the model of 0.17. 
+
+
+# Part 5 - Conclusion
+
+In conclusion, our strongest relationship when looking at this from bi-variate analysis standpoint, (only one response and one predictor variable),  obtain is 0.18 indicating that as the share of the population with only a HS degree increases, the number of hate crimes per 100k of people tend to increase. Similarly, and interestingly.. we obtain our second strongest coefficient of 0.17 infering that share of proportions increase for those who voted for Trump within a state, the lower the hate crimes. This to me implies states that have more partisan divisiveness have higher rates of crimes. so all red, or all blue states will likely have lower hate crime rates. <br>
+Both regression coefficients had P<0.05 and are statistically significant, the conditions for inference were also met with linearity, normal (after outlier removal), and scattered residuals.
+
+# References:
+
+Openintro Statistics, Fourth Edition, David Diez
+

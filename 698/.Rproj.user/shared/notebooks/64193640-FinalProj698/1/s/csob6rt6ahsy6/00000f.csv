@@ -1,0 +1,17 @@
+"0","default_removals<-
+  c(""CHLORINE_RESIDUALMAX"",
+    ""CHLORINE_RESIDUALSMPL"",
+    ""Sheet"",
+    ""Date"",
+    ""Day"",
+    ""DAY"",
+    ""Year"",
+    ""Time"",
+    ""ResidualperTarget"",
+    ""CHL_RES_AT_TIME_OF_FECAL_SAMPLE""
+    ""Date"")
+"
+"2","Error: unexpected string constant in:
+""    ""CHL_RES_AT_TIME_OF_FECAL_SAMPLE""
+    ""Date""""
+"

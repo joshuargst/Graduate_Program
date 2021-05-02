@@ -1,0 +1,167 @@
+---
+title: "Data606 Project"
+author: "Joshua Registe"
+date: "3/29/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+
+
+# Part 1 - Introduction
+
+Research Question <br> 
+
+In the project proposal I intend to use the dataset from fivethirtyeight called "hate_crimes". The dataset is described below. The research question i would like to answer is are their any significant relationships between hatecrimes in the US to other parameters in the dataset such as unemployment, median household income, race, etc.
+<br> 
+<br>
+A "hate crime" is defined as a crime that is based on a particular bias or prejudice. Several cases may be: African-Americans being policed differently than others potentially in fatal ways or, crimes against muslims or other islamic religious groups because of their faith, or crimes against those with specific sexual orientations. 
+<br> 
+This is an important question because in recent years there has been an uptick in recorded hate crimes. It is unclear if crime rates are increasing over time or if there is just more light being shed upon these situations due to the abundance of technology in today's society vs previous decades. Nonetheless, it is important to understand the relationship between hate crimes and other potential factors to be to take measures both politically and socially to mitigate the issue.
+<br> 
+
+# Part 2 - Data
+
+The Data 
+```{r}
+library(fivethirtyeight)
+library(DT)
+library(GGally)
+library(Hmisc)
+library(tidyverse)
+
+library(RColorBrewer)
+        
+colnames((hate_crimes))
+
+hatecrimes<-hate_crimes
+```
+
+<br>
+there are about 51 cases in this dataset is hatecrimes and has 2 metrics in this dataset:
+<br> "hate_crimes_per_100k_splc" - This represents the hate crimes per every 100,000 people 
+<br> "avg_hatecrimes_per_100k_fbi" - This represents Average annual hate crimes per every 100,000 people
+<br>
+<br> It's important to note that these aggregated observations and the data is not granular to where provides each individual hate crime as an observation and information about it.
+<br>
+<br> The variables that are of interest will be most of the other variables in the dataset, these will be used as our predictor variables while hate crimes will be our response variable: 
+<br> median_house_inc - Median Household income for the year of 2016
+<br> share_unemp_season - Share of the population that is unemployed
+<br> share_pop_metro - share of population that lives in a metropolitan area for the year of 2015
+<br> share_non_citizen - Share of the population that are not U.S. Citizens as of 2015
+<br> share_white_poverty - Share of white residents who live in poverty for 2015
+<br> gini_index - a measure of the distribution of income across income percentiles in a population
+<br> share_non_white - Share of the population that is not white for 2015
+<br> share_vote_trump - Share of 2016 U.S. presidential voters who voted for Donald Trump
+
+<br><br>
+This is an observational study because we are collecting historical data evaluating our hypothesis based on that. There will be no experimental design with placebo control groups and experimental groups. The scope of our inference will be generalized to the US population since this data provides a sample that is representative of every individual state. Because this is not a randomized control trial, we will not use these data to infer causality.
+
+
+
+## Part 3 - Exploratory data analysis
+
+
+
+The following data table below allows the user to look through the raw data set from fivethirtyeights. 
+```{r}
+datatable(hate_crimes)
+
+
+
+```
+
+To do some exploratory analysis, We will employ tools that help us understand the distribution of our data, this includes providing summary stats accross all of the columns and 
+We have a wide version of the dataset but we will create a long version as well for ease of looking at different parameters in our dataset
+
+
+### View Histogram of Data
+
+## {.tabset .tabset-fade}
+
+### View Histogram of Data
+```{r, fig.height=10}
+
+hatecrimes_long<-hatecrimes %>% 
+  pivot_longer(cols = 3:length(hatecrimes), names_to = "Parameter")
+
+
+hatecrimes_long %>% ggplot(mapping = aes(x = value, fill = Parameter))+
+  geom_histogram(alpha = 0.4)+
+  facet_wrap(Parameter~.,scales = 'free', ncol = 3)+
+  #geom_density(fill = NA, linetype = 2, na.rm=T)+
+  theme(panel.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill=NA),
+        panel.grid = element_blank(),
+        legend.position = "top",
+        legend.title = element_blank(),
+        strip.background =element_blank())
+
+```
+
+### View Density Plot of Data
+
+```{r, fig.height=10}
+
+hatecrimes_long %>% ggplot(mapping = aes(x = value, fill = Parameter))+
+  #geom_histogram(alpha = 0.4)+
+  facet_wrap(Parameter~.,scales = 'free', ncol = 3)+
+  geom_density(fill = NA, linetype = 2, na.rm=T)+
+  theme(panel.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill=NA),
+        panel.grid = element_blank(),
+        legend.position = "top",
+        legend.title = element_blank(),
+        strip.background =element_blank())
+
+```
+
+
+### View QQPlot Plot of Data
+
+```{r, fig.height=10}
+
+
+
+hatecrimes_long %>% ggplot(mapping = aes(sample = value))+
+  #geom_histogram(alpha = 0.4)+
+  stat_qq()+stat_qq_line()+
+  facet_wrap(Parameter~.,scales = 'free', ncol = 3)+
+  #geom_density(fill = NA, linetype = 2, na.rm=T)+
+  theme(panel.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill=NA),
+        panel.grid = element_blank(),
+        legend.position = "top",
+        legend.title = element_blank(),
+        strip.background =element_blank())
+
+```
+##
+
+summary statistics for the dataset are shown below:
+```{r}
+
+describe(hatecrimes)
+
+```
+
+
+## Part 4 - Inference
+
+
+## Part 5 - Conclusion
+
+
+## References:
+
+
+### Appendix (optional):
+
+Remove this section if you don't have an appendix

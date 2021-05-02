@@ -1,0 +1,149 @@
+---
+title: "607 Project 1"
+author: "Joshua Registe"
+date: "9/17/2019"
+output: html_document
+
+
+
+
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(readr)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(knitr)
+library(kableExtra)
+```
+
+<br />
+<br />
+The following script extracts the tournament data from a github repository and extracts information from the repository using the stringr package within R and regular expressions as described in Chapter 8 of Simon Munzert's Data Science for Business. Using the stringr package, the player's pre-scores, post-scores and total points are extracted.
+<br />
+<br />
+
+
+```{r}
+tournamentinfo<-read_file("https://raw.githubusercontent.com/joshuargst/Data607Proj1/master/tournamentinfo.txt")
+#extracting PreScore
+Pre_Score<-unlist(str_extract_all(tournamentinfo, "R:\\s+[:digit:]{1,4}"))%>% str_extract_all("[:digit:]+")%>%unlist%>%as.numeric()
+
+#extracting PostScore
+Post_Score<-unlist(str_extract_all(tournamentinfo, "->\\s*[:digit:]{1,4}"))%>% str_extract_all("[:digit:]+")%>%unlist%>%as.numeric()
+
+#extracting Total points of each player
+Total_Points<-unlist(str_extract_all(tournamentinfo, "\\d+\\.\\d+"))%>%as.numeric()
+
+```
+
+<br />
+<br />
+Since the data isnt completely unstructured, we can use the read_delim function within readr to parse information into a dataframe with the character "|" used as a delimiter. We can clean this semi structured table to place all the pertinent information we wish to extract. the code below shows this process.
+<br />
+<br />
+<br />
+
+
+```{r}
+tournamentinfo <- read_delim("https://raw.githubusercontent.com/joshuargst/Data607Proj1/master/tournamentinfo.txt", "|", escape_double = FALSE, trim_ws = TRUE, skip = 2)
+
+
+tournamentinfo<-tournamentinfo[-grep("--+",tournamentinfo$Num),]
+
+tournamentinfo1<-tournamentinfo[-grep("[[:alpha:]]",tournamentinfo$Num),]
+
+#exctracting states
+tournamentinfo2<-tournamentinfo[-grep("[[:digit:]]",tournamentinfo$Num),][1]
+colnames(tournamentinfo2)[1]<-"Player_State"
+
+  
+WinsLosses<-separate(tournamentinfo1,'1',c("game_1","Game_1"), sep = "\\s+")%>%
+  separate('2',c("game_2","Game_2"), sep = "\\s+")%>%
+  separate('3',c("game_3","Game_3"), sep = "\\s+")%>%
+  separate('4',c("game_4","Game_4"), sep = "\\s+")%>%
+  separate('5',c("game_5","Game_5"), sep = "\\s+")%>%
+  separate('6',c("game_6","Game_6"), sep = "\\s+")%>%
+  separate('7',c("game_7","Game_7"), sep = "\\s+")
+
+colnames(WinsLosses)[1]<-"PlayerID"
+colnames(WinsLosses)[2]<-"PlayerName"
+WinsLosses<-WinsLosses[c(-3,-18)]
+
+head(WinsLosses)
+```
+
+
+<br />
+<br />
+As shown in the preview table above, we now have a table that identifies each player with each game win/loss designation as well as that player's opponent for that game. 
+
+We can clean this so that our data is in a more readable format by compressing this wider table into a longer formats as shown in the tables below
+
+<br />
+<br />
+
+```{r}
+
+PlayerInfo<-cbind.data.frame(WinsLosses[c(1,2)],tournamentinfo2[1],Pre_Score,Post_Score,Total_Points)
+
+WinsLosses<-gather(WinsLosses, Game,W_L_D, -Game_1,-Game_2,-Game_3,-Game_4,-Game_5,-Game_6,-Game_7,-PlayerName,-PlayerID)[c(1,2,10,11)]
+
+
+WinsLosses2<-separate(tournamentinfo1,'1',c("game_1","Game_1"), sep = "\\s+")%>%
+  separate('2',c("game_2","Game_2"), sep = "\\s+")%>%
+  separate('3',c("game_3","Game_3"), sep = "\\s+")%>%
+  separate('4',c("game_4","Game_4"), sep = "\\s+")%>%
+  separate('5',c("game_5","Game_5"), sep = "\\s+")%>%
+  separate('6',c("game_6","Game_6"), sep = "\\s+")%>%
+  separate('7',c("game_7","Game_7"), sep = "\\s+")
+
+colnames(WinsLosses2)[1]<-"PlayerID"
+colnames(WinsLosses2)[2]<-"PlayerName"
+WinsLosses2<-WinsLosses2[c(-3,-18)]
+
+
+WinsLosses2<-gather(WinsLosses2, Game2,OpponentID, -game_1,-game_2,-game_3,-game_4,-game_5,-game_6,-game_7,-PlayerName,-PlayerID)[c(1,2,10,11)]
+
+WinsLosses
+WinsLosses2
+
+```
+
+
+<br />
+<br />
+Finally we can combine all of the necessary data from all parsing that was done and place this into our summary data frame called "FinalTable". Within this table, we use dplyr to group by playerIDs and summarize the opponent scores for each game by their mean and end with our final output as shown below.
+<br />
+<br />
+
+```{r}
+WinsLosses<-cbind(WinsLosses,WinsLosses2)[c(1,2,3,4,8)]
+
+WinsLosses$Game<-str_replace_all(WinsLosses$Game,"game_","")
+
+WinsLosses$Game<-str_replace_all(WinsLosses$Game,"Game_","")
+
+
+#summarise opponent scores
+
+
+FinalTable<-
+  left_join(WinsLosses,PlayerInfo, by = c("OpponentID"="PlayerID"))%>%  
+  group_by(PlayerID)%>%
+  summarise(Avg_Opponent_Score = round(mean(Pre_Score,na.rm = TRUE),0))%>%
+  left_join(PlayerInfo,by = c("PlayerID"= "PlayerID"))%>%as.data.frame()
+
+#reorder table for cleanliness
+FinalTable<-FinalTable[c(1,3:7,2)]
+kable(FinalTable, format = "html")
+
+
+```
+
+
+

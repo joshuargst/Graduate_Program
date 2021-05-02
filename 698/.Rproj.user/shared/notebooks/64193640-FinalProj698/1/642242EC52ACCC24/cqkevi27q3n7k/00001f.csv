@@ -1,0 +1,5 @@
+"0","arrange(-importance(dtmodel$fit$fit$fit))
+"
+"2","Error in UseMethod(""arrange"") : 
+  no applicable method for 'arrange' applied to an object of class ""c('double', 'numeric')""
+"
