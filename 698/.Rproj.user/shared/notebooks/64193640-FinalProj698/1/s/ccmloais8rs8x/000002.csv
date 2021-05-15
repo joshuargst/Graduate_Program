@@ -1,7 +1,0 @@
-"0","wf1_results<-
-dt_wf1 %>% fit_resamples(resamples= datacv, 
-                           metrics = metric_set(roc_auc, accuracy, sensitivity, specificity,kap),
-                           control = control_resamples(save_pred = T))
-"
-"2","[31mx[39m [31mFold10: preprocessor 1/1, model 1/1 (predictions): Error: Missing data in columns: PC01, PC02, PC03, ...[39m
-"

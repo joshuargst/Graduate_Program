@@ -1,9 +1,0 @@
-"0","training_predictions<-
-predict(dtmodel,Datatrain, type = ""class"") %>% 
-  bind_cols(Datatrain$Loan_Status) %>% 
-  rename(""Chlorineexceedance""= ""...2"") %>% 
-  mutate(set = ""Training"")
-"
-"2","Error in split.default(x = seq_len(nrow(x)), f = f, drop = drop, ...) : 
-  group length is 0 but data length > 0
-"

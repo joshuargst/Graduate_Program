@@ -1,5 +1,0 @@
-"0","importance(dtmodel$fit$fit$fit)
-"
-"2","Error in importance.ranger(dtmodel$fit$fit$fit) : 
-  No variable importance found. Please use 'importance' option when growing the forest.
-"

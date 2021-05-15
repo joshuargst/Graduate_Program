@@ -1,5 +1,0 @@
-"0","a<-dt_recipe1 %>% prep() %>% bake(Datatrain)
-"
-"2","Error in gower_work(x = x, y = y, pair_x = pair_x, pair_y = pair_y, n = n,  : 
-  Column 20 of x is of class character while matching column 20 of y is of class factor
-"

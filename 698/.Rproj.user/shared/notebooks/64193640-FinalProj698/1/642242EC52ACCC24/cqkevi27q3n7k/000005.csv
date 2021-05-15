@@ -1,6 +1,0 @@
-"0","dtmodel<-
-  wf1_results %>% parsnip::fit(data = Datatrain)
-"
-"2","Error in UseMethod(""fit"") : 
-  no applicable method for 'fit' applied to an object of class ""c('resample_results', 'tune_results', 'tbl_df', 'tbl', 'data.frame')""
-"
