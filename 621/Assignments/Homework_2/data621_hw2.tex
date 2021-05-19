@@ -1,0 +1,670 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={DS 621 (Fall 2020): Homework 2 (Group3)},
+  pdfauthor={Zach Alexander, Sam Bellows, Donny Lofland, Joshua Registe, Neil Shah, Aaron Zalki},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{geometry}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{xcolor}
+
+\title{DS 621 (Fall 2020): Homework 2 (Group3)}
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\subtitle{Classification Metrics}
+\author{Zach Alexander, Sam Bellows, Donny Lofland, Joshua Registe, Neil Shah,
+Aaron Zalki}
+\date{}
+
+\begin{document}
+\maketitle
+
+Source code:
+\url{https://github.com/djlofland/DS621_F2020_Group3/tree/master/Homework_2}
+
+\hypertarget{overview}{%
+\subsection{Overview}\label{overview}}
+
+This assignment will present various classification metrics through
+creating functions in R that will carry out these calculations. These
+calculations will be will be compared against built-in functions from
+various R packages and a graphical representation of these results will
+be presented.
+
+\hypertarget{download-dataset}{%
+\subsection{1. Download Dataset}\label{download-dataset}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df <-}\StringTok{ }\KeywordTok{read.csv}\NormalTok{ (}\StringTok{"https://raw.githubusercontent.com/djlofland/DS621_F2020_Group3/master/Homework_2/datasets/classification-output-data.csv"}\NormalTok{, }\DataTypeTok{header=}\OtherTok{TRUE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+The dataset has three key columns we will use:
+
+\texttt{class} the actual class for the observation
+
+\texttt{scored.class} the predicted class for the observation (based on
+a threshold of 0.5)
+
+\texttt{scored.probability}the predicted probability of success for the
+observation
+
+\hypertarget{data-exploration}{%
+\subsubsection{Data Exploration}\label{data-exploration}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{summary}\NormalTok{(df) }
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##     pregnant         glucose        diastolic        skinfold   
+##  Min.   : 0.000   Min.   : 57.0   Min.   : 38.0   Min.   : 0.0  
+##  1st Qu.: 1.000   1st Qu.: 99.0   1st Qu.: 64.0   1st Qu.: 0.0  
+##  Median : 3.000   Median :112.0   Median : 70.0   Median :22.0  
+##  Mean   : 3.862   Mean   :118.3   Mean   : 71.7   Mean   :19.8  
+##  3rd Qu.: 6.000   3rd Qu.:136.0   3rd Qu.: 78.0   3rd Qu.:32.0  
+##  Max.   :15.000   Max.   :197.0   Max.   :104.0   Max.   :54.0  
+##     insulin            bmi           pedigree           age       
+##  Min.   :  0.00   Min.   :19.40   Min.   :0.0850   Min.   :21.00  
+##  1st Qu.:  0.00   1st Qu.:26.30   1st Qu.:0.2570   1st Qu.:24.00  
+##  Median :  0.00   Median :31.60   Median :0.3910   Median :30.00  
+##  Mean   : 63.77   Mean   :31.58   Mean   :0.4496   Mean   :33.31  
+##  3rd Qu.:105.00   3rd Qu.:36.00   3rd Qu.:0.5800   3rd Qu.:41.00  
+##  Max.   :543.00   Max.   :50.00   Max.   :2.2880   Max.   :67.00  
+##      class         scored.class    scored.probability
+##  Min.   :0.0000   Min.   :0.0000   Min.   :0.02323   
+##  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.11702   
+##  Median :0.0000   Median :0.0000   Median :0.23999   
+##  Mean   :0.3149   Mean   :0.1768   Mean   :0.30373   
+##  3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.43093   
+##  Max.   :1.0000   Max.   :1.0000   Max.   :0.94633
+\end{verbatim}
+
+\hypertarget{raw-confusion-matrix}{%
+\subsection{2. Raw Confusion Matrix}\label{raw-confusion-matrix}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{(confusion_matrix <-}\StringTok{ }\KeywordTok{table}\NormalTok{(}\StringTok{"Actual"}\NormalTok{=}\StringTok{ }\NormalTok{df}\OperatorTok{$}\NormalTok{class, }\StringTok{"Predicted"}\NormalTok{=df}\OperatorTok{$}\NormalTok{scored.class))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       Predicted
+## Actual   0   1
+##      0 119   5
+##      1  30  27
+\end{verbatim}
+
+Here is the raw confusion matrix with rows reflecting Actual and columns
+are Predicted.
+
+\hypertarget{custom-metric-functions}{%
+\subsection{Custom Metric Functions}\label{custom-metric-functions}}
+
+\hypertarget{accuracy-function}{%
+\subsubsection{3. Accuracy Function}\label{accuracy-function}}
+
+The following function returns the accuracy of the predictions.
+
+\[ Accuracy = \frac{TP + TN}{TP + FP + TN + FN}\]
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#' Return the accuracy of a given dataset.  Note: the dataframe should have an observed class and predicted class.}
+\CommentTok{#'}
+\CommentTok{#' @param df A dataframe}
+\CommentTok{#' @param observed Column name holding the class}
+\CommentTok{#' @param predicted Column name holding the predicted class}
+\CommentTok{#' @examples}
+\CommentTok{#' accuracy(myDF)}
+\CommentTok{#' @return float}
+\CommentTok{#' @export}
+\NormalTok{accuracy <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(}\DataTypeTok{df=}\OtherTok{NULL}\NormalTok{, }\DataTypeTok{observed=}\StringTok{'class'}\NormalTok{, }\DataTypeTok{predicted=}\StringTok{'scored.class'}\NormalTok{) \{}
+  \CommentTok{# Make sure a dataframe was passed and we have both class and predicted columns}
+  \ControlFlowTok{if}\NormalTok{ (}\KeywordTok{is.null}\NormalTok{(df) }\OperatorTok{||}\StringTok{ }\OperatorTok{!}\KeywordTok{any}\NormalTok{(}\KeywordTok{names}\NormalTok{(df)}\OperatorTok{==}\NormalTok{observed) }\OperatorTok{||}\StringTok{ }\OperatorTok{!}\KeywordTok{any}\NormalTok{(}\KeywordTok{names}\NormalTok{(df) }\OperatorTok{==}\StringTok{ }\NormalTok{predicted)) \{}
+\NormalTok{    return}
+\NormalTok{  \}}
+
+  \CommentTok{# true negative, false negative, false positive, true positive}
+\NormalTok{  cols =}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"TN"}\NormalTok{, }\StringTok{"FN"}\NormalTok{, }\StringTok{"FP"}\NormalTok{, }\StringTok{"TP"}\NormalTok{)}
+\NormalTok{  confusion_matrix <-}\StringTok{ }\KeywordTok{table}\NormalTok{(}\StringTok{"Actual"}\NormalTok{ =}\StringTok{ }\NormalTok{df[[observed]], }
+                            \StringTok{"Predicted"}\NormalTok{ =}\StringTok{ }\NormalTok{df[[predicted]])}
+  
+\NormalTok{  confusion_matrix <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(confusion_matrix, }\DataTypeTok{index =}\NormalTok{ cols)}
+  
+  \CommentTok{# calculate accuracy}
+\NormalTok{  accuracy_value <-}\StringTok{ }\NormalTok{(confusion_matrix}\OperatorTok{$}\NormalTok{Freq[}\DecValTok{4}\NormalTok{] }\OperatorTok{+}\StringTok{ }\NormalTok{confusion_matrix}\OperatorTok{$}\NormalTok{Freq[}\DecValTok{1}\NormalTok{]) }\OperatorTok{/}\StringTok{ }\KeywordTok{sum}\NormalTok{(confusion_matrix}\OperatorTok{$}\NormalTok{Freq)}
+  \KeywordTok{return}\NormalTok{(accuracy_value)}
+\NormalTok{\}}
+
+\CommentTok{# test function}
+\NormalTok{(Accuracy <-}\StringTok{ }\KeywordTok{accuracy}\NormalTok{(df))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.8066298
+\end{verbatim}
+
+\hypertarget{error-function}{%
+\subsubsection{4. Error Function}\label{error-function}}
+
+\[ Error = \frac{FP + FN}{TP + FP + TN + FN}\]
+
+The following function returns the classification error rate of the
+predictions.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{error <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(df) \{}
+  \CommentTok{# true negative, false negative, false positive, true positive}
+\NormalTok{  cols =}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"TN"}\NormalTok{, }\StringTok{"FN"}\NormalTok{, }\StringTok{"FP"}\NormalTok{, }\StringTok{"TP"}\NormalTok{)}
+\NormalTok{  confusion_matrix <-}\StringTok{ }\KeywordTok{table}\NormalTok{(}\StringTok{"Actual"}\NormalTok{=df}\OperatorTok{$}\NormalTok{class, }\StringTok{"Predicted"}\NormalTok{=df}\OperatorTok{$}\NormalTok{scored.class)}
+\NormalTok{  confusion_matrix <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(confusion_matrix, }\DataTypeTok{index =}\NormalTok{ cols)}
+  
+  \CommentTok{# calculate error}
+\NormalTok{  error_value <-}\StringTok{ }\NormalTok{(confusion_matrix}\OperatorTok{$}\NormalTok{Freq[}\DecValTok{2}\NormalTok{] }\OperatorTok{+}\StringTok{ }\NormalTok{confusion_matrix}\OperatorTok{$}\NormalTok{Freq[}\DecValTok{3}\NormalTok{]) }\OperatorTok{/}\StringTok{ }\KeywordTok{sum}\NormalTok{(confusion_matrix}\OperatorTok{$}\NormalTok{Freq)}
+  \KeywordTok{return}\NormalTok{(error_value)}
+\NormalTok{\}}
+
+\CommentTok{# test function}
+\NormalTok{(Error <-}\StringTok{ }\KeywordTok{error}\NormalTok{(df))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.1933702
+\end{verbatim}
+
+We can verify the sum of the accuracy and error rates is equal to one.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# check sum}
+\NormalTok{Accuracy }\OperatorTok{+}\StringTok{ }\NormalTok{Error }
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1
+\end{verbatim}
+
+\hypertarget{precision-function}{%
+\subsubsection{5. Precision Function}\label{precision-function}}
+
+\[ Precision = \frac{TP}{TP + FP }\] The following function returns the
+precision of the predictions.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{precision <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(df) \{}
+  \CommentTok{# true negative, false negative, false positive, true positive}
+\NormalTok{  cols =}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"TN"}\NormalTok{, }\StringTok{"FN"}\NormalTok{, }\StringTok{"FP"}\NormalTok{, }\StringTok{"TP"}\NormalTok{)}
+\NormalTok{  confusion_matrix <-}\StringTok{ }\KeywordTok{table}\NormalTok{(}\StringTok{"Actual"}\NormalTok{=df}\OperatorTok{$}\NormalTok{class, }\StringTok{"Predicted"}\NormalTok{=df}\OperatorTok{$}\NormalTok{scored.class)}
+\NormalTok{  confusion_matrix <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(confusion_matrix, }\DataTypeTok{index =}\NormalTok{ cols)}
+  
+  \CommentTok{# calculate precision}
+\NormalTok{  error_value <-}\StringTok{ }\NormalTok{(confusion_matrix}\OperatorTok{$}\NormalTok{Freq[}\DecValTok{4}\NormalTok{])}\OperatorTok{/}\NormalTok{(confusion_matrix}\OperatorTok{$}\NormalTok{Freq[}\DecValTok{4}\NormalTok{]}\OperatorTok{+}\NormalTok{confusion_matrix}\OperatorTok{$}\NormalTok{Freq[}\DecValTok{3}\NormalTok{])}
+  \KeywordTok{return}\NormalTok{(error_value)}
+\NormalTok{\}}
+
+\CommentTok{# test function}
+\KeywordTok{precision}\NormalTok{(df)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.84375
+\end{verbatim}
+
+\hypertarget{sensitivity-function}{%
+\subsubsection{6. Sensitivity Function}\label{sensitivity-function}}
+
+\[ Sensitivity = \frac{TP}{TP + FN }\] The following function returns
+the sensitivity of the predictions.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{sensitivity <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(df) \{}
+  \CommentTok{# true negative, false negative, false positive, true positive}
+\NormalTok{  cols =}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"TN"}\NormalTok{, }\StringTok{"FN"}\NormalTok{, }\StringTok{"FP"}\NormalTok{, }\StringTok{"TP"}\NormalTok{)}
+\NormalTok{  confusion_matrix <-}\StringTok{ }\KeywordTok{table}\NormalTok{(}\StringTok{"Actual"}\NormalTok{=df}\OperatorTok{$}\NormalTok{class, }\StringTok{"Predicted"}\NormalTok{=df}\OperatorTok{$}\NormalTok{scored.class)}
+\NormalTok{  confusion_matrix <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(confusion_matrix, }\DataTypeTok{index =}\NormalTok{ cols)}
+  
+  \CommentTok{# calculate sensitivity }
+\NormalTok{  error_value <-}\StringTok{ }\NormalTok{(confusion_matrix}\OperatorTok{$}\NormalTok{Freq[}\DecValTok{4}\NormalTok{])}\OperatorTok{/}\NormalTok{(confusion_matrix}\OperatorTok{$}\NormalTok{Freq[}\DecValTok{4}\NormalTok{]}\OperatorTok{+}\NormalTok{confusion_matrix}\OperatorTok{$}\NormalTok{Freq[}\DecValTok{2}\NormalTok{])}
+  \KeywordTok{return}\NormalTok{(error_value)}
+\NormalTok{\}}
+
+\CommentTok{# test function}
+\NormalTok{(}\KeywordTok{sensitivity}\NormalTok{(df))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.4736842
+\end{verbatim}
+
+\hypertarget{specificity-function}{%
+\subsubsection{7. Specificity Function}\label{specificity-function}}
+
+\[ Specificity = \frac{TN}{TN + FP}\] The following function returns the
+specificity of the predictions.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{specificity <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(df) \{}
+  \CommentTok{# true negative, false negative, false positive, true positive}
+\NormalTok{  cols =}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"TN"}\NormalTok{, }\StringTok{"FN"}\NormalTok{, }\StringTok{"FP"}\NormalTok{, }\StringTok{"TP"}\NormalTok{)}
+\NormalTok{  confusion_matrix <-}\StringTok{ }\KeywordTok{table}\NormalTok{(}\StringTok{"Actual"}\NormalTok{=df}\OperatorTok{$}\NormalTok{class, }\StringTok{"Predicted"}\NormalTok{=df}\OperatorTok{$}\NormalTok{scored.class)}
+\NormalTok{  confusion_matrix <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(confusion_matrix, }\DataTypeTok{index =}\NormalTok{ cols)}
+  
+  \CommentTok{#calculate specificity}
+\NormalTok{  error_value <-}\StringTok{ }\NormalTok{(confusion_matrix}\OperatorTok{$}\NormalTok{Freq[}\DecValTok{1}\NormalTok{]) }\OperatorTok{/}\StringTok{ }\NormalTok{(confusion_matrix}\OperatorTok{$}\NormalTok{Freq[}\DecValTok{1}\NormalTok{] }\OperatorTok{+}\StringTok{ }\NormalTok{confusion_matrix}\OperatorTok{$}\NormalTok{Freq[}\DecValTok{3}\NormalTok{])}
+  \KeywordTok{return}\NormalTok{(error_value)}
+\NormalTok{\}}
+
+\CommentTok{# test function}
+\NormalTok{(}\KeywordTok{specificity}\NormalTok{(df))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.9596774
+\end{verbatim}
+
+\hypertarget{f1-score-function}{%
+\subsubsection{8. F1 Score Function}\label{f1-score-function}}
+
+\[ F1Score = \frac{2 *Precision *Sensitivity}{Precision + Sensitivity}\]
+
+The following function returns the F1 score of the predictions.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{f1_score <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(df) \{}
+  \CommentTok{# get precision and sensitivity from our custom functions}
+\NormalTok{  precision_value <-}\StringTok{ }\KeywordTok{precision}\NormalTok{(df)}
+\NormalTok{  sensitivity_value <-}\StringTok{ }\KeywordTok{sensitivity}\NormalTok{(df)}
+  
+  \CommentTok{# calculate F1 Score}
+\NormalTok{  F1_Score =}\StringTok{ }\NormalTok{(}\DecValTok{2} \OperatorTok{*}\StringTok{ }\NormalTok{precision_value }\OperatorTok{*}\StringTok{ }\NormalTok{sensitivity_value) }\OperatorTok{/}\StringTok{ }\NormalTok{(precision_value }\OperatorTok{+}\StringTok{ }\NormalTok{sensitivity_value)}
+  \KeywordTok{return}\NormalTok{(F1_Score)}
+\NormalTok{\}}
+
+\NormalTok{(}\KeywordTok{f1_score}\NormalTok{(df))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.6067416
+\end{verbatim}
+
+\hypertarget{f1-score-bounds}{%
+\subsubsection{9. F1 Score Bounds}\label{f1-score-bounds}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{f1_function <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(precision, sensitivity) \{}
+\NormalTok{  f1score <-}\StringTok{ }\NormalTok{(}\DecValTok{2} \OperatorTok{*}\StringTok{ }\NormalTok{precision }\OperatorTok{*}\StringTok{ }\NormalTok{sensitivity) }\OperatorTok{/}\StringTok{ }\NormalTok{(precision }\OperatorTok{+}\StringTok{ }\NormalTok{sensitivity)}
+  \KeywordTok{return}\NormalTok{ (f1score)}
+\NormalTok{\}}
+
+\CommentTok{# 0 precision, 0.5 sensitivity}
+\NormalTok{(}\KeywordTok{f1_function}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FloatTok{.5}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# 1 precision, 1 sensitivity}
+\NormalTok{(}\KeywordTok{f1_function}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{1}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1
+\end{verbatim}
+
+The F1 score is bounded from 0 to 1.
+
+\hypertarget{roc-curve}{%
+\subsubsection{10. ROC Curve}\label{roc-curve}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{roc_plot <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(df, probability) \{}
+  \KeywordTok{set.seed}\NormalTok{(}\DecValTok{824}\NormalTok{)}
+  
+\NormalTok{  x <-}\StringTok{ }\KeywordTok{seq}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{, }\FloatTok{.01}\NormalTok{)}
+\NormalTok{  FPR <-}\StringTok{ }\KeywordTok{numeric}\NormalTok{(}\KeywordTok{length}\NormalTok{(x))}
+\NormalTok{  TPR <-}\StringTok{ }\NormalTok{FPR}
+\NormalTok{  pos <-}\StringTok{ }\KeywordTok{sum}\NormalTok{(df}\OperatorTok{$}\NormalTok{class }\OperatorTok{==}\StringTok{ }\DecValTok{1}\NormalTok{)}
+\NormalTok{  neg <-}\StringTok{ }\KeywordTok{sum}\NormalTok{(df}\OperatorTok{$}\NormalTok{class }\OperatorTok{==}\StringTok{ }\DecValTok{0}\NormalTok{)}
+  
+  \ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \DecValTok{1}\OperatorTok{:}\KeywordTok{length}\NormalTok{(x)) \{}
+\NormalTok{    data_subset <-}\StringTok{ }\KeywordTok{subset}\NormalTok{(df, df}\OperatorTok{$}\NormalTok{scored.probability }\OperatorTok{<=}\StringTok{ }\NormalTok{x[i])}
+    
+    \CommentTok{# true positive}
+\NormalTok{    TP <-}\StringTok{ }\KeywordTok{sum}\NormalTok{(data_subset[data_subset}\OperatorTok{$}\NormalTok{class }\OperatorTok{==}\StringTok{ }\DecValTok{1}\NormalTok{, probability] }\OperatorTok{>}\StringTok{ }\FloatTok{0.5}\NormalTok{)}
+    
+    \CommentTok{# true negative}
+\NormalTok{    TN <-}\StringTok{ }\KeywordTok{sum}\NormalTok{(data_subset[data_subset}\OperatorTok{$}\NormalTok{class }\OperatorTok{==}\StringTok{ }\DecValTok{0}\NormalTok{, probability] }\OperatorTok{<=}\StringTok{ }\FloatTok{0.5}\NormalTok{)}
+    
+    \CommentTok{# false positive}
+\NormalTok{    FP <-}\StringTok{ }\KeywordTok{sum}\NormalTok{(data_subset[data_subset}\OperatorTok{$}\NormalTok{class }\OperatorTok{==}\StringTok{ }\DecValTok{0}\NormalTok{, probability] }\OperatorTok{>}\StringTok{ }\FloatTok{0.5}\NormalTok{)}
+    
+    \CommentTok{# false negative}
+\NormalTok{    FN <-}\StringTok{ }\KeywordTok{sum}\NormalTok{(data_subset[data_subset}\OperatorTok{$}\NormalTok{class }\OperatorTok{==}\StringTok{ }\DecValTok{1}\NormalTok{, probability] }\OperatorTok{<=}\StringTok{ }\FloatTok{0.5}\NormalTok{)}
+    
+\NormalTok{    TPR[i] <-}\StringTok{ }\DecValTok{1} \OperatorTok{-}\StringTok{ }\NormalTok{(TP }\OperatorTok{+}\StringTok{ }\NormalTok{FN) }\OperatorTok{/}\StringTok{ }\NormalTok{pos}
+\NormalTok{    FPR[i] <-}\StringTok{ }\DecValTok{1} \OperatorTok{-}\StringTok{ }\NormalTok{(TN }\OperatorTok{+}\StringTok{ }\NormalTok{FP) }\OperatorTok{/}\StringTok{ }\NormalTok{neg }
+\NormalTok{  \}}
+  
+\NormalTok{  classification_data <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(TPR, FPR)}
+  
+  
+\NormalTok{  ggplot <-}\StringTok{ }\KeywordTok{ggplot}\NormalTok{(classification_data, }\KeywordTok{aes}\NormalTok{(FPR, TPR))}
+  
+\NormalTok{  plot =}\StringTok{ }\NormalTok{ggplot }\OperatorTok{+}\StringTok{ }
+\StringTok{    }\KeywordTok{geom_line}\NormalTok{() }\OperatorTok{+}\StringTok{ }
+\StringTok{    }\KeywordTok{geom_abline}\NormalTok{(}\DataTypeTok{intercept =} \DecValTok{0}\NormalTok{) }\OperatorTok{+}\StringTok{ }
+\StringTok{    }\KeywordTok{ggtitle}\NormalTok{(}\StringTok{"ROC Curve for Classification data"}\NormalTok{) }\OperatorTok{+}
+\StringTok{    }\KeywordTok{theme_bw}\NormalTok{()}
+
+\NormalTok{  height =}\StringTok{ }\NormalTok{(classification_data}\OperatorTok{$}\NormalTok{TPR[}\OperatorTok{-}\DecValTok{1}\NormalTok{] }\OperatorTok{+}
+\StringTok{            }\NormalTok{classification_data}\OperatorTok{$}\NormalTok{TPR[}\OperatorTok{-}\KeywordTok{length}\NormalTok{(classification_data}\OperatorTok{$}\NormalTok{TPR)]) }\OperatorTok{/}\StringTok{ }\DecValTok{2}
+\NormalTok{  width =}\StringTok{ }\OperatorTok{-}\KeywordTok{diff}\NormalTok{(classification_data}\OperatorTok{$}\NormalTok{FPR)}
+\NormalTok{  AUC =}\StringTok{ }\KeywordTok{sum}\NormalTok{(height }\OperatorTok{*}\StringTok{ }\NormalTok{width)}
+  
+  \KeywordTok{return}\NormalTok{ (}\KeywordTok{list}\NormalTok{(}\DataTypeTok{AUC =}\NormalTok{ AUC, plot))}
+\NormalTok{\}}
+
+\KeywordTok{roc_plot}\NormalTok{(df, }\StringTok{"scored.probability"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## $AUC
+## [1] 0.8488964
+## 
+## [[2]]
+\end{verbatim}
+
+\includegraphics{data621_hw2_files/figure-latex/unnamed-chunk-13-1.pdf}
+
+\hypertarget{use-all-functions}{%
+\subsection{11. Use All Functions}\label{use-all-functions}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{Accuracy <-}\StringTok{ }\KeywordTok{accuracy}\NormalTok{(df)}
+\NormalTok{Error <-}\StringTok{ }\KeywordTok{error}\NormalTok{(df)}
+\NormalTok{Precision <-}\StringTok{ }\KeywordTok{precision}\NormalTok{(df)}
+\NormalTok{Sensitivity <-}\StringTok{ }\KeywordTok{sensitivity}\NormalTok{(df)}
+\NormalTok{Specificity <-}\StringTok{ }\KeywordTok{specificity}\NormalTok{(df)}
+\NormalTok{F1_score <-}\StringTok{ }\KeywordTok{f1_score}\NormalTok{(df)}
+\NormalTok{ROC <-}\StringTok{ }\KeywordTok{roc_plot}\NormalTok{(df, }\StringTok{"scored.probability"}\NormalTok{)}
+\NormalTok{AUC <-}\StringTok{ }\NormalTok{ROC}\OperatorTok{$}\NormalTok{AUC}
+
+\NormalTok{classification_data <-}\StringTok{ }\KeywordTok{t}\NormalTok{(}\KeywordTok{data.frame}\NormalTok{(Accuracy, }
+\NormalTok{                                    Error, }
+\NormalTok{                                    Precision, }
+\NormalTok{                                    Sensitivity, }
+\NormalTok{                                    Specificity, }
+\NormalTok{                                    F1_score,}
+\NormalTok{                                    AUC))}
+\NormalTok{classification_data}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##                  [,1]
+## Accuracy    0.8066298
+## Error       0.1933702
+## Precision   0.8437500
+## Sensitivity 0.4736842
+## Specificity 0.9596774
+## F1_score    0.6067416
+## AUC         0.8488964
+\end{verbatim}
+
+\hypertarget{compare-to-caret-functions}{%
+\subsection{12. Compare to caret
+Functions}\label{compare-to-caret-functions}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{cm <-}\StringTok{ }\KeywordTok{confusionMatrix}\NormalTok{(}\DataTypeTok{data =} \KeywordTok{as.factor}\NormalTok{(df}\OperatorTok{$}\NormalTok{scored.class), }
+                      \DataTypeTok{reference =} \KeywordTok{as.factor}\NormalTok{(df}\OperatorTok{$}\NormalTok{class), }
+                      \DataTypeTok{positive =} \StringTok{"1"}\NormalTok{)}
+\NormalTok{cm}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction   0   1
+##          0 119  30
+##          1   5  27
+##                                           
+##                Accuracy : 0.8066          
+##                  95% CI : (0.7415, 0.8615)
+##     No Information Rate : 0.6851          
+##     P-Value [Acc > NIR] : 0.0001712       
+##                                           
+##                   Kappa : 0.4916          
+##                                           
+##  Mcnemar's Test P-Value : 4.976e-05       
+##                                           
+##             Sensitivity : 0.4737          
+##             Specificity : 0.9597          
+##          Pos Pred Value : 0.8438          
+##          Neg Pred Value : 0.7987          
+##              Prevalence : 0.3149          
+##          Detection Rate : 0.1492          
+##    Detection Prevalence : 0.1768          
+##       Balanced Accuracy : 0.7167          
+##                                           
+##        'Positive' Class : 1               
+## 
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{Sensitivity }\OperatorTok{==}\StringTok{ }\NormalTok{cm}\OperatorTok{$}\NormalTok{byClass[}\StringTok{"Sensitivity"}\NormalTok{]}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Sensitivity 
+##        TRUE
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{Specificity }\OperatorTok{==}\StringTok{ }\NormalTok{cm}\OperatorTok{$}\NormalTok{byClass[}\StringTok{"Specificity"}\NormalTok{]}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Specificity 
+##        TRUE
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{Accuracy }\OperatorTok{==}\StringTok{ }\NormalTok{cm}\OperatorTok{$}\NormalTok{overall[}\StringTok{"Accuracy"}\NormalTok{]}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Accuracy 
+##     TRUE
+\end{verbatim}
+
+Our homebrew R functions match with the caret() package functions.
+
+\hypertarget{proc}{%
+\subsection{13. pROC}\label{proc}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{roc <-}\StringTok{ }\KeywordTok{roc}\NormalTok{(df}\OperatorTok{$}\NormalTok{class, df}\OperatorTok{$}\NormalTok{scored.probability)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Setting levels: control = 0, case = 1
+\end{verbatim}
+
+\begin{verbatim}
+## Setting direction: controls < cases
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(roc, }\DataTypeTok{main=}\StringTok{"ROC Curve for Classification data"}\NormalTok{) }
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{data621_hw2_files/figure-latex/unnamed-chunk-16-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# area under curve}
+\NormalTok{roc}\OperatorTok{$}\NormalTok{auc}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Area under the curve: 0.8503
+\end{verbatim}
+
+Our AUC was 0.8484 compared to pROC's 0.8503, which are within 0.2\% of
+each other and thus converge--difference could be due to numerical
+integration under the curve.
+
+\hypertarget{references}{%
+\subsection{References}\label{references}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Kuhn and Johnson. Applied Predictive Modeling.
+\item
+  Web tutorials: \url{http://www.saedsayad.com/model_evaluation_c.htm}
+\end{enumerate}
+
+\end{document}

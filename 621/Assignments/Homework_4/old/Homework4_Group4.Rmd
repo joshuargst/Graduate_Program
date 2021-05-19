@@ -1,0 +1,417 @@
+---
+title: 'DS 621 Fall2020: Homework 4 (Group4)'
+subtitle: 'Crime Logistic Regression'
+author: 'Zach Alexander, Sam Bellows, Donny Lofland, Joshua Registe, Neil Shah, Aaron Zalki'
+data: '11/20/2020'
+output:
+  html_document:  
+    theme: cerulean
+    highlight: pygments
+    css: ./lab.css
+    toc: true
+    toc_float: true
+  pdf_document:
+    extra_dependencies: ["geometry", "multicol", "multirow", "xcolor"]
+---
+
+Source code: [https://github.com/djlofland/DS621_F2020_Group3/tree/master/Homework_4](https://github.com/djlofland/DS621_F2020_Group3/tree/master/Homework_4)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+library(MASS)
+library(scales)
+library(rpart.plot)
+library(ggplot2)
+library(ggfortify)
+library(gridExtra)
+library(forecast)
+library(fpp2)
+library(fma)
+library(kableExtra)
+library(e1071)
+library(mlbench)
+library(ggcorrplot)
+library(DataExplorer)
+library(timeDate)
+library(caret)
+library(GGally)
+library(corrplot)
+library(RColorBrewer)
+library(tibble)
+library(tidyr)
+library(tidyverse)
+library(tidyselect)
+library(dplyr)
+library(reshape2)
+library(mixtools)
+library(tidymodels)
+library(ggpmisc)
+library(regclass)
+library(pROC)
+
+#' Print a side-by-side Histogram and QQPlot of Residuals
+#'
+#' @param model A model
+#' @examples
+#' residPlot(myModel)
+#' @return null
+#' @export
+residPlot <- function(model) {
+  # Make sure a model was passed
+  if (is.null(model)) {
+    return
+  }
+  
+  layout(matrix(c(1,1,2,3), 2, 2, byrow = TRUE))
+  plot(residuals(model))
+  hist(model[["residuals"]], freq = FALSE, breaks = "fd", main = "Residual Histogram",
+       xlab = "Residuals",col="lightgreen")
+  lines(density(model[["residuals"]], kernel = "ep"),col="blue", lwd=3)
+  curve(dnorm(x,mean=mean(model[["residuals"]]), sd=sd(model[["residuals"]])), col="red", lwd=3, lty="dotted", add=T)
+  qqnorm(model[["residuals"]], main = "Residual Q-Q plot")
+  qqline(model[["residuals"]],col="red", lwd=3, lty="dotted")
+  par(mfrow = c(1, 1))
+}
+
+#' Print a Variable Importance Plot for the provided model
+#'
+#' @param model The model
+#' @param chart_title The Title to show on the plot
+#' @examples
+#' variableImportancePlot(myLinearModel, 'My Title)
+#' @return null
+#' @export
+variableImportancePlot <- function(model=NULL, chart_title='Variable Importance Plot') {
+  # Make sure a model was passed
+  if (is.null(model)) {
+    return
+  }
+  
+  # use caret and gglot to print a variable importance plot
+  varImp(model) %>% as.data.frame() %>% 
+    ggplot(aes(x = reorder(rownames(.), desc(Overall)), y = Overall)) +
+    geom_col(aes(fill = Overall)) +
+    theme(panel.background = element_blank(),
+          panel.grid = element_blank(),
+          axis.text.x = element_text(angle = 90)) +
+    scale_fill_gradient() +
+    labs(title = chart_title,
+         x = "Parameter",
+         y = "Relative Importance")
+}
+
+
+#' Print a Facet Chart of histograms
+#'
+#' @param df Dataset
+#' @param box Facet size (rows)
+#' @examples
+#' histbox(my_df, 3)
+#' @return null
+#' @export
+histbox <- function(df, box) {
+    par(mfrow = box)
+    ndf <- dimnames(df)[[2]]
+    
+    for (i in seq_along(ndf)) {
+            data <- na.omit(unlist(df[, i]))
+            hist(data, breaks = "fd", main = paste("Histogram of", ndf[i]),
+                 xlab = ndf[i], freq = FALSE)
+            lines(density(data, kernel = "ep"), col = 'red')
+    }
+    
+    par(mfrow = c(1, 1))
+}
+
+#' Extract key performance results from a model
+#'
+#' @param model A linear model of interest
+#' @examples
+#' model_performance_extraction(my_model)
+#' @return data.frame
+#' @export
+model_performance_extraction <- function(model=NULL) {
+  # Make sure a model was passed
+  if (is.null(model)) {
+    return
+  }
+  
+  data.frame("RSE" = model$sigma,
+             "Adj R2" = model$adj.r.squared,
+             "F-Statistic" = model$fstatistic[1])
+}
+
+#' Initial cleaning of the dataset
+#'
+#' @dataset dataset being cleaned, specific to insurance datasets
+#' @return data.frame
+#' @export
+
+initial_cleaning<- function(dataset){
+  
+  dataset<-dataset %>% 
+    dplyr::select(-INDEX) %>% 
+    #converting the currency based columns to numeric
+    mutate_at(vars(c("INCOME","HOME_VAL","OLDCLAIM","BLUEBOOK")),~as.numeric(str_replace_all(.,c("\\$"="","\\,"="")))) 
+  
+  return(dataset)
+}
+
+```
+
+
+
+## 1. Data Exploration
+
+*Describe the size and the variables in the insurance training data set. Consider that too much detail will cause a manager to lose interest while too little detail will make the manager consider that you aren't doing your job. Some suggestions are given below. Please do NOT treat this as a checklist of things to do to complete the assignment.
+You should have your own thoughts on what to tell the boss. These are just ideas.*
+
+We'll first load in the insurance datasets:
+
+```{r load_data, echo=FALSE}
+# Load insurance dataset
+df <- read.csv('datasets/insurance_training_data.csv')
+df_eval <- read.csv('datasets/insurance-evaluation-data.csv')
+```
+
+
+Given that the Index column had no impact on the target variable, it was dropped as part of the initial cleaning function. Additionally, the fields "INCOME", "HOME_VAL", "OLDCLAIM", and, "BLUEBOOK", were imported as characters with "$" leaders and were converted to numeric as part of the initial cleaning function. Both the training and evaluation datasets will pass through this treatment.
+
+```{r echo=FALSE}
+# Drop the INDEX column - this won't be useful and cleaning currency based character columns
+
+df<-initial_cleaning(df)
+df_eval <- initial_cleaning(df_eval)
+```
+
+Now, with initial cleaning complete, we can take a quick look at the dimensions of both the training and evaluation datasets:
+
+**Dimensions of training dataset**
+
+```{r, echo=FALSE}
+dim(df)
+```
+**Dimensions of evaluation dataset**
+```{r, echo=FALSE}
+dim(df_eval)
+```
+It looks like we have 8,161 cases and 25 variables in the training dataset and 2,141 cases and 25 variables in the evaluation dataset.
+
+We can also provide a summary of each variable and it's theoretical effect it'll have on our models:
+
+![Variables of Interest](./images/features-explain.jpg)
+
+### Summary Stats
+
+We compiled summary statistics on our data set to better understand the data before modeling. 
+
+
+```{r columns, echo=FALSE}
+# Display summary statistics
+summary(df)
+```
+
+### Check Class Bias
+
+Next, we wanted to get an idea of the distribution profiles for each of the variables. We have two target values, 0 and 1. When building models, we ideally want an equal representation of both classes. As class imbalance deviates, our model performance will suffer both form effects of differential variance between the classes and bias towards picking the more represented class. For logistic regression, if we see a strong imbalance, we can 1) up-sample the smaller group, down-sample the larger group, or adjust our threshold for assigning the predicted value away from 0.5.
+
+```{r, echo=FALSE}
+
+prop.table(table(df$TARGET_FLAG)) %>% kable() %>% 
+    kable_styling(
+      full_width = F) %>% 
+    add_header_above(header = c("Classification of Target Flag"=2))
+
+```
+
+
+The classes are not perfectly balanced, with approximately 73.6% 0’s and 26.4% 1’s. With unbalanced class distributions, it is often necessary to artificially balance the classes to achieve good results. Up-sampling or Down-sampling may be required to achieve class balance with this dataset. We will evaluate model performance accordingly.
+
+
+
+### Distributions
+
+```{r, fig.height = 10, fig.width = 10, echo=FALSE}
+DataExplorer::plot_bar(
+  data = df,
+         order_bar = T,
+         ggtheme=theme_bw())
+```
+
+
+
+Next, we visualize the distribution profiles for each of the predictor variables. This will help us to make a plan on which variable to include, how they might be related to each other or the target, and finally identify outliers or transformations that might help improve model resolution.
+
+```{r, fig.height = 10, fig.width = 10, echo=FALSE}
+DataExplorer::plot_histogram(
+  geom_histogram_args = list(alpha = 0.5),
+   data = df,
+         ggtheme=theme_bw())
+
+```
+
+The distribution profiles show the prevalence of kurtosis, specifically right skew in variables `TRAVTIME`, `OLDCLAIM`, `MVR_PTS`, `TARGET_AMT`, `INCOME`, `BLUEBOOK`, and approximately normal distributions in `YOJ`, `CARAGE`, `HOME_VAL`, and `AGE`. When deviations are skewed from traditional normal distribution, this can be problematic for regression assumptions, and thus we might need to transform the data. Under logistic regression, we will need to dummy factor-based variables for the model to understand the data.
+
+
+While we don't tackle feature engineering in this analysis, if we were performing a more in-depth analysis, we could leverage the package, `mixtools` (see R Vignette).  This package helps regress *mixed models* where data can be subdivided into subgroups. 
+
+Lastly, several features have both a distribution along with a high number of values at an extreme. However, based on the feature meanings and provided information, there is no reason to believe that any of these extreme values are mistakes, data errors, or otherwise inexplicable. As such, we will not remove the extreme values, as they represent valuable data and could be predictive of the target.
+
+
+### Boxplots
+
+In addition to creating histogram distributions, we also elected to use box-plots to get an idea of the spread of the response variable `TARGET_AMT` in relation to all of the non-numeric variables. Two sets of boxplots are shown below due to the wide distribution of the response variable. The first set of boxplots highlights the entire range and shows how the cost of car crashes peaks relative to the specific category. 
+
+
+```{r, fig.height = 10, fig.width = 10, echo=FALSE}
+
+df_character_wide<-
+df %>% select_if(function(col) is.numeric(col)==F | all(col==.$TARGET_AMT)) %>% 
+  pivot_longer(cols = -TARGET_AMT,names_to="variable",values_to="value")
+                 
+df_character_wide %>% 
+  ggplot(mapping = aes(x = value, y = TARGET_AMT))+
+  geom_boxplot()+facet_wrap(.~variable, scales="free")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90))
+
+```
+
+The second set of box plots simply shows these same distributions "zoomed in" by adjusting the axis to allow for a visual of the interquartile range of the response variable relative to each of the categorical predictors. 
+
+```{r, fig.height = 10, fig.width = 10, echo=FALSE}
+
+df_character_wide %>% 
+  ggplot(mapping = aes(x = value, y = TARGET_AMT))+
+  geom_boxplot()+facet_wrap(.~variable, scales="free")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90))+
+  coord_cartesian(ylim = c(NA,5000))
+
+```
+
+### Variable Plots
+
+We wanted to plot scatter plots of each variable versus the target variable to get an idea of the relationship between them. The scatter. There are some notable trends as observed in the scatterplots below such as our response variable `TARGET_AMT` is likely to be lower when individuals have more kids at home as indicated by the `HOMEKIDS` feature, and when they have more teenagers driving the car indicated by the feature `KIDSDRIV`. 
+
+Additionally a pairwise comparison plot between all features, both numeric and non-numeric is shown following the scatterplot where this initially implies that there aren't a significant amount of correlated features and this can give some insight into the expected significance and performing dimensionality reduction on the datasets for the models.
+
+```{r, fig.height = 10, fig.width = 10, echo=FALSE}
+
+DataExplorer::plot_scatterplot(
+    data = dplyr::select_if(df,is.numeric),
+    by = "TARGET_AMT",
+         ggtheme=theme_bw(),
+    theme_config = list(axis.text.x = element_text(angle = 90)))
+
+
+DataExplorer::plot_correlation(data = df,type = "all",cor_args = list("use" = "pairwise.complete.obs"))
+
+
+
+```
+
+### Data Sparsity Check
+
+Finally, we can observe the sparsity of information within our dataset by using the `DataExplorer` package to assess missing information.
+
+```{r}
+
+DataExplorer::plot_missing(df,ggtheme = theme_bw())
+
+```
+
+We can see that generally, our dataset is in good shape, however, some imputation may be needed for `INCOME`, `YOJ`, `HOME_VAL`, and `CAR_AGE`. 
+
+## 2. Data Preparation
+
+To summarize our data preparation and exploration, we can distinguish our findings into a few categories below:
+
+### Removed Fields
+
+All the predictor variables have no missing values and show no indication of incomplete or incorrect data. As such, we have kept all the fields.
+
+### Missing Values
+
+Missing values will be imputed with the step_impute functions in the tidy models recipes.
+
+### Outliers
+
+No outliers were removed as all values seemed reasonable. 
+
+
+### Transform non-normal variables
+
+Finally, as mentioned earlier in our data exploration, and our findings from our histogram plots, we can see that some of our variables are highly skewed. To address this, we decided to perform some transformations to make them more normally distributed. Here are some plots to demonstrate the changes in distributions before and after the transformations:  
+
+```{r, echo=FALSE, fig.height=5, fig.width=8, message=FALSE, warning=FALSE}
+
+# boxcox done on bluebook, 
+# performed boxcox transformation after identifying proper lambda
+# 
+# Performed log on Target AMT, and old claim
+
+transformative_cleaning<-function(DF){
+
+  return(
+    #transforming dataset with boxcox
+    DF %>% mutate_at(c("AGE","BLUEBOOK","CAR_AGE","HOME_VAL","INCOME","TIF","TRAVTIME"), 
+                     function(x) BoxCox(x, BoxCox.lambda(x))) %>% 
+      #transforming with log
+      mutate_at(c("TARGET_AMT","OLDCLAIM"),log) %>% 
+      #removing all infinite values generated from transformations
+      mutate_if(is.numeric, list(~na_if(., Inf))) %>% 
+      mutate_if(is.numeric, list(~na_if(., -Inf)))
+
+  )
+}
+
+```
+
+
+
+```{r, fig.height = 10, fig.width = 10, echo=FALSE}
+
+# Build clean dataframe with transformation
+
+clean_df <- transformative_cleaning(df)
+#View new distributions of nominal values
+DataExplorer::plot_histogram(
+  geom_histogram_args = list(alpha = 0.5),
+   data = clean_df,
+         ggtheme=theme_bw())
+
+```
+
+
+
+
+## 3. Build Models
+
+*Using the training data, build at least two different multiple linear regression models and three different binary logistic models, using different variables (or the same variables with different transformations). You may select the variables manually, use an approach such as Forward or Stepwise, use a different approach, or use a combination of techniques. Describe the techniques you used. If you manually selected a variable for inclusion into the model or exclusion into the model, indicate why this was done.* 
+*Be sure to explain how you can make inferences from the model, as well as discuss other relevant model output. Discuss the coefficients in the models, do they make sense? Are you keeping the model even though it is counter-intuitive? Why? The boss needs to know.* 
+
+### Linear Regression
+
+#### Linear Regression Model 1
+
+first model, no transformations, all nominal predictors included
+```{r}
+
+
+
+#75% data test training split
+set.seed(1)
+
+df_split<- initial_split(clean_df,.75)
+df_train<-training(df_split)
+df_test<-testing(df_split)
+
+
+```
+
+
+

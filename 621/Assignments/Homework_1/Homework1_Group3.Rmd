@@ -1,0 +1,1164 @@
+---
+title: 'DS 621 Fall2020: Homework 1 (Group3)'
+subtitle: 'Moneyball Linear Regression'
+author: 'Zach Alexander, Sam Bellows, Donny Lofland, Joshua Registe, Neil Shah, Aaron Zalki'
+data: '09/02/2020'
+output:
+  html_document:
+    theme: cerulean
+    highlight: pygments
+    css: ./lab.css
+    toc: true
+    toc_float: true
+  pdf_document:
+    extra_dependencies: ["geometry", "multicol", "multirow", "xcolor"]
+---
+
+Source code: [https://github.com/djlofland/DS621_F2020_Group3/tree/master/Homework_1](https://github.com/djlofland/DS621_F2020_Group3/tree/master/Homework_1)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+library(MASS)
+library(rpart.plot)
+library(ggplot2)
+library(ggfortify)
+library(gridExtra)
+library(forecast)
+library(fpp2)
+library(fma)
+library(kableExtra)
+library(e1071)
+library(mlbench)
+library(ggcorrplot)
+library(DataExplorer)
+library(timeDate)
+library(caret)
+library(GGally)
+library(corrplot)
+library(RColorBrewer)
+library(tibble)
+library(tidyr)
+library(tidyverse)
+library(dplyr)
+library(reshape2)
+library(mixtools)
+library(tidymodels)
+library(ggpmisc)
+library(regclass)
+
+#' Print a side-by-side Histogram and QQPlot of Residuals
+#'
+#' @param model A model
+#' @examples
+#' residPlot(myModel)
+#' @return null
+#' @export
+residPlot <- function(model) {
+  # Make sure a model was passed
+  if (is.null(model)) {
+    return
+  }
+  
+  layout(matrix(c(1,1,2,3), 2, 2, byrow = TRUE))
+  plot(residuals(model))
+  hist(model[["residuals"]], freq = FALSE, breaks = "fd", main = "Residual Histogram",
+       xlab = "Residuals",col="lightgreen")
+  lines(density(model[["residuals"]], kernel = "ep"),col="blue", lwd=3)
+  curve(dnorm(x,mean=mean(model[["residuals"]]), sd=sd(model[["residuals"]])), col="red", lwd=3, lty="dotted", add=T)
+  qqnorm(model[["residuals"]], main = "Residual Q-Q plot")
+  qqline(model[["residuals"]],col="red", lwd=3, lty="dotted")
+  par(mfrow = c(1, 1))
+}
+
+#' Print a Variable Importance Plot for the provided model
+#'
+#' @param model The model
+#' @param chart_title The Title to show on the plot
+#' @examples
+#' variableImportancePlot(myLinearModel, 'My Title)
+#' @return null
+#' @export
+variableImportancePlot <- function(model=NULL, chart_title='Variable Importance Plot') {
+  # Make sure a model was passed
+  if (is.null(model)) {
+    return
+  }
+  
+  # use caret and gglot to print a variable importance plot
+  varImp(model) %>% as.data.frame() %>% 
+    ggplot(aes(x = reorder(rownames(.), desc(Overall)), y = Overall)) +
+    geom_col(aes(fill = Overall)) +
+    theme(panel.background = element_blank(),
+          panel.grid = element_blank(),
+          axis.text.x = element_text(angle = 90)) +
+    scale_fill_gradient() +
+    labs(title = chart_title,
+         x = "Parameter",
+         y = "Relative Importance")
+}
+
+
+#' Print a Facet Chart of histograms
+#'
+#' @param df Dataset
+#' @param box Facet size (rows)
+#' @examples
+#' histbox(my_df, 3)
+#' @return null
+#' @export
+histbox <- function(df, box) {
+    par(mfrow = box)
+    ndf <- dimnames(df)[[2]]
+    
+    for (i in seq_along(ndf)) {
+            data <- na.omit(unlist(df[, i]))
+            hist(data, breaks = "fd", main = paste("Histogram of", ndf[i]),
+                 xlab = ndf[i], freq = FALSE)
+            lines(density(data, kernel = "ep"), col = 'red')
+    }
+    
+    par(mfrow = c(1, 1))
+}
+
+#' Extract key performance results from a model
+#'
+#' @param model A linear model of interest
+#' @examples
+#' model_performance_extraction(my_model)
+#' @return data.frame
+#' @export
+model_performance_extraction <- function(model=NULL) {
+  # Make sure a model was passed
+  if (is.null(model)) {
+    return
+  }
+  
+  data.frame("RSE" = model$sigma,
+             "Adj R2" = model$adj.r.squared,
+             "F-Statistic" = model$fstatistic[1])
+}
+
+```
+
+## Overview
+
+In professional sports, there is a huge interest in attempting to leverage historic statistics to both predict future outcomes (wins/losses) and explore opportunities for tuning or improving a team or individual's performance.  This data-driven approach to sports has gained a large following over the last decade and entered mass media in the form of fantasy leagues, movies (e.g. Moneyball), and websites/podcasts (e.g. FiveThirtyEight).  In this analysis, we will be using a classic baseball data set with the goal of building several different models capable of predicting team wins over a season given other team stats during that season (i.e. homeruns, strikeouts, base hits, etc).  
+
+We will first explore the data looking for issues or challenges (i.e. missing data, outliers, possible coding errors, multicollinearlity, etc).  Once we have a handle on the data, we will apply any necessary cleaning steps.  Once we have a reasonable dataset to work with, we will build and evaluate three different linear models that predict seasonal wins.  Our dataset includes both training data and evaluation data - we will train using the main training data, then evaluate models based on how well they perform against the holdout evaluation data.  Finally we will select a final model that offers the best compromise between accuracy and simplicity. 
+
+
+## 1. Data Exploration
+
+*Describe the size and the variables in the moneyball training data set. Consider that too much detail will cause a
+manager to lose interest while too little detail will make the manager consider that you aren’t doing your job. Some
+suggestions are given below. Please do NOT treat this as a check list of things to do to complete the assignment.
+You should have your own thoughts on what to tell the boss. These are just ideas.*
+
+### Dataset
+
+The moneyball training set contains 17 columns - including the target variable "TARGET_WINS" - and 2276 rows, covering baseball team performance statistics from the years 1871 to 2006 inclusive. The data has been adjusted to match the performance of a typical 162 game season. The data-set was entirely numerical and contained no categorical variables.
+
+Below, we created a chart that describes each variable in the dataset and the theoretical effect it will have on the number of wins projected for a team.
+
+```{r load_data, echo=FALSE}
+# Load Moneyball baseball dataset
+df <- read.csv('datasets/moneyball-training-data.csv')
+df_eval <- read.csv('datasets/moneyball-evaluation-data.csv')
+
+# Remove superfluous TEAM_ from column names
+names(df) <- names(df) %>% 
+  str_replace_all('TEAM_', '')
+```
+
+![Variables of Interest](./figures/Variables.png)
+
+
+Given that the Index column had no impact on the target variable, number of wins, it was dropped. 
+
+```{r echo=FALSE}
+# Drop the INDEX column - this won't be useful
+df <- df %>% 
+  dplyr::select(-INDEX)
+```
+
+
+### Summary Stats
+
+We compiled summary statistics on our data set to better understand the data before modeling. 
+
+
+```{r columns, echo=FALSE}
+# Display summary statistics
+summary(df)
+
+```
+
+The first observation is the prevalance of NA's throughout the dataset. On a cursory view, we can quickly see that the average wins per season for a team is about 81, which is exactly half of the total games played in a typical MLB season. Additionally, batters hit, on average, about 9 base hits per game, pitchers throw about 4 base-on-balls (walks) per game, and pitchers record about 5 strikeouts per game, when calculated out over a 162-game season.
+
+
+### Distributions
+
+Next, we wanted to get an idea of the distribution profiles for each of the variables. 
+
+
+```{r, fig.height = 10, fig.width = 10, echo=FALSE}
+# Prepare data for ggplot
+gather_df <- df %>% 
+  gather(key = 'variable', value = 'value')
+
+# Histogram plots of each variable
+ggplot(gather_df) + 
+  geom_histogram(aes(x=value, y = ..density..), bins=30) + 
+  geom_density(aes(x=value), color='blue') +
+  facet_wrap(. ~variable, scales='free', ncol=4)
+```
+
+The distribution profiles show the prevalence of kurtosis, specifically right skew in variables BASERUN_CS, BASERUN_SB, FIELDING_E, PITCHING_BB, PITCHING_H and PITCHING_SO. These deviations from a traditional normal distribution can be problematic for linear regression assumptions, and thus we might need to transform the data.  Furthermore BATTING_HBP, BATTING_HR, PITCHING_HR and BATTING_SO appear bimodal. Bimodal features in a dataset are both problematic and interesting and potentially an area of opportunity and exploration.  Bimodal data suggests that there are possibly two different groups or classes of baseball season data.  During those seasons, teams tended to score higher or lower for the bimodal feature.  
+
+Two possibilities immediately come to mind.  The bimodal nature could be caused by a rule change such that games before a specific time point had lower values and games after that point had higher values.  Unfortunately, we do not have any features that record the year of the data.  The second is that teams either do well or not for the given KPI.  Let's consider BATTING_SO (Batters striking out) - if some teams have better players, they might have a reasonable normal distribution lower than those teams with worse players.  We do know that certain teams are able to attract and pay for better players (let's call them Tier 1) than some teams with lower budgets and less visibility (let's call them Tier 2). Even with a given team, they might have "good years" and "off years".  It's possible the distribution of BATTING_SO represents the overlap or superposition of this two distinct curves representing different classes of team.
+
+While we don't tackle feature engineering in this analysis, if we were performing a more in-depth analysis, these are some possible options.
+
+* We have no data linking rows with specific years.  We might attempt to locate additional data sets that link performance to year and leverage change point detection to see if bimodal relationships are linked with all teams at specific points in time.  If change points are present, that suggests something changed affecting all teams (e.g. new rules that improved or lowered the bimodal feature).  We would then create a new categorical feature indicating which class the row data came from, before or after the change point.
+
+* We have no data linking rows with specific teams so cannot directly tell if there are more than one Tier of team.  Instead, we could explore whether there are correlation between the bimodal nature across different bimodal features (i.e. do rows with lower BATTING_HR line up with rows with lower/higher BATTING_SO) within rows. If there are strong correlations between bimodal features, that suggests there might be two classes of teams (or yearly team performance) and we could create a new categorical variable(s) indicating the probable Tier per row.  Alternatively, we could assign a new numerical feature indicating the probability a row fell into which class.
+
+* R provides a package, `mixtools` (see R Vignette) which helps regress *mixed models* where data can be subdivided into subgroups.  Here is a quick example showing a possible mix within BATTING_SO:
+
+```{r, echo=FALSE}
+# Select BATTING_SO column and remove any missing data
+df_mix <- df %>% 
+  dplyr::select(BATTING_SO) %>%
+  drop_na()
+
+# Calculate mixed distributions for BATTING_SO
+batting_so_mix <- normalmixEM(df_mix$BATTING_SO, 
+                              lambda = .5, 
+                              mu = c(400, 1200), 
+                              sigma = 5, 
+                              maxit=60)
+
+# Simple plot to illustrate possible bimodal mix of groups
+plot(batting_so_mix, 
+     whichplots = 2,
+     density = TRUE, 
+     main2 = "BATTING_SO Possible Distributions", 
+     xlab2 = "BATTING_SO")
+```
+
+### Boxplots
+
+In addition to creating histogram distributions, we also elected to use box-plots to get an idea of the spread of each variable. 
+
+```{r, fig.height = 10, fig.width = 10, echo=FALSE}
+# Prepare data for ggplot
+gather_df <- df %>% 
+  gather(key = 'variable', value = 'value')
+
+# Boxplots for each variable
+ggplot(gather_df, aes(variable, value)) + 
+  geom_boxplot() + 
+  facet_wrap(. ~variable, scales='free', ncol=6)
+```
+
+The box-plots reveal significant outliers and uniform (zero-only) values for many of our predictor variables. Outliers will need to imputed if necessary, and sparse data-sets might need to be dropped. 
+
+### Variable Plots
+
+Finally, we wanted to plot scatter plots of each variable versus the target variable, TARGET_WINS, to get an idea of the relationship between them. 
+
+```{r, fig.height = 10, fig.width = 10, echo=FALSE}
+# Plot scatter plots of each variable versus the target variable
+featurePlot(df[,2:ncol(df)], df[,1], pch = 20)
+```
+
+The plots indicate some clear relationships, such as hitting more doubles or more home runs clearly improves the number of wins.
+
+Overall, although our plots indicate some interesting relationships between our variables, they also reveal some significant issues with the data. 
+
+For instance, most of the predictor variables are skewed or non-normally distributed, and will need to be transformed. Additionally, there are many data points that contain missing data that will need to be either imputed or discarded. It also appears we have some missing data encoded as 0 and some nonsensical outliers.
+
+There is a team with 0 wins in the dataset. This seems unlikely. Many of the hitting categories include teams at 0; it is unlikely that a team hit 0 home runs over the course of a season.
+
+The pitching variables also include many 0's, for instance there are multiple teams with 0 strikeouts by their pitchers over the season which is extremely unlikely. The pitching data also includes strange outliers such as a team logging 20,000 strikeouts, that would be an average of 160 strikeouts per game which is impossible. Also team pitching walks and team pitching hits have strange outliers.
+
+Lastly, the error variable makes little sense. From our experience watching baseball, teams usually score 2 or less errors per game, which would lead to an overall team error of approximately 320 over the course of a season, which does not match the scale of the error variable. It is possible that errors have become much less frequent over time which would account for the high error data.
+
+### Missing Data
+
+When we initially viewed the first few rows of the raw data, we already noticed missing data.  Let's assess which fields have missing data.
+
+```{r echo=FALSE} 
+# Identify missing data by Feature and display percent breakout
+missing <- colSums(df %>% sapply(is.na))
+missing_pct <- round(missing / nrow(df) * 100, 2)
+stack(sort(missing_pct, decreasing = TRUE))
+```
+
+Notice that ~91.6% of the rows are missing from the BATTING_HBP field - we will just drop this column from consideration.  The columns BASERUN_CS (base run caught stealing) and BASERUN_SB (stolen bases) both have missing values.  According to baseball history, stolen bases weren't tracked officially until 1887, so some of the missing data could be from 1871-1886.  We will impute those values.  There are a high percentage of missing BATTING_SO (batter strike outs) and PITCHING_SO (pitching strike outs) which seem highly unlikely - we will also impute those missing values. We have chosen to impute missing values with the median value of the feature.
+
+```{r echo=FALSE}
+# Drop the BATTING_HBP field
+df <- df %>% 
+  select(-BATTING_HBP)
+
+# We have chosen to impute the median as there are strong outliers that may skew the mean. Could revisit for advanced imputation via prediction later.
+no_outlier_df <- df
+
+# 4000 strikeouts is an average of 25 strikeouts per game, which is ridiculous.
+no_outlier_df$PITCHING_SO <- ifelse(no_outlier_df$PITCHING_SO > 4000, NA, no_outlier_df$PITCHING_SO)
+
+# 5000 hits is an average of 30 hits allowed per game, which is also ridiculous.
+no_outlier_df$PITCHING_H <- ifelse(no_outlier_df$PITCHING_H > 5000, NA, no_outlier_df$PITCHING_H)
+
+# 2000 walks is an average of 13 walks per game which is unlikely.
+no_outlier_df$PITCHING_BB <- ifelse(no_outlier_df$PITCHING_BB > 2000, NA, no_outlier_df$PITCHING_BB)
+
+# more than 480 errors is an average of 3 per game which is unlikely.
+no_outlier_df$FIELDING_E <- ifelse(no_outlier_df$FIELDING_E > 480, NA, no_outlier_df$FIELDING_E)
+
+clean_df <- no_outlier_df %>% 
+  impute(what = 'median') %>% as.data.frame()
+
+# From the plots, the team with 0 wins has 0 in multiple other categories. I believe this is missing data, not valid data.
+clean_df <- clean_df %>% 
+  filter(TARGET_WINS != 0)
+
+gather_clean_df <- clean_df %>% 
+  gather(key = 'variable', value = 'value', -TARGET_WINS)
+```
+
+### Feature-Target Correlations
+
+With our missing data imputed correctly, we can now build off the scatter plots from above to quantify the correlations between our target variable and predictor variable. We will want to choose those with stronger positive or negative correlations.  Features with correlations closer to zero will probably not provide any meaningful information on explaining wins by a team.
+
+```{r echo=FALSE}
+# Show feature correlations/target by decreasing correlation
+stack(sort(cor(clean_df[,1], clean_df[,2:ncol(clean_df)])[,], decreasing=TRUE))
+```
+
+BATTING_H and BATTING_2B have the highest correlation (positive) with TOTAL_WINs; this makes sense given that more hits means more points/runs, and thus likelihood to win the game. The other variables have weak or slightly negative correlation, which can imply they might have little predictive power.
+
+### Multicolinearity
+
+One problem that can occur with multi-variable regression is correlation between variables, or multicolinearity. A quick check is to run correlations between variables.   
+
+```{r echo=FALSE}
+# Calculate and plot the Multicolinearity
+correlation = cor(clean_df, use = 'pairwise.complete.obs')
+
+corrplot(correlation, 'ellipse', type = 'lower', order = 'hclust',
+         col=brewer.pal(n=8, name="RdYlBu"))
+```
+
+We can see that some variables are highly correlated with one another, such as PITCHING_BB and BATTING_BB. When we start considering features for our models, we'll need to account for the correlations between features and avoid including pairs with strong correlations.
+
+As a note, this dataset is challenging as many of the predictive features go hand-in-hand with other feature and multicolinearity will be a problem.  Better teams will see all positive features go up and negative features go down and vice versa.  Many features are also inherently associated, for example, as batter strike outs increase, we would expect a decrease in hit metrics.  As Base Hits increase, we would expect to see increases in the 2B, 3B and 4B columns, etc. 
+
+## 2. Data Preparation
+
+To summarize our data preparation and exploration, we can distinguish our findings into a few categories below:
+
+### Removed Fields
+
+We removed the BATTING_HBP field as it was missing >90% of the data and the INDEX field as it offers no information for a model.  
+
+### Missing Values
+
+There were missing values found in BASERUN_CS (Caught Stolen Bases), FIELDING_DP (Double plays), BASERUN_SB (Stolen Bases), BATTING_SO (Batter Strike outs), PITCHING_SO (Pitcher Strike outs) so we decided to replace these missing values with their corresponding median values.  It is highly unlikely that teams had none of these during an entire season.
+
+### Outliers
+
+There are unreasonable outliers found in PITCHING_SO (pitching strikeouts), PITCHING_H (allowed hits per game), PITCHING_BB (walks), and  FIELDING_E (fielding errors) that exceed what is reasonable or possible given standard game length.  While specific games might have outliers (e.g. in a game with extra innings), we wouldn't expect the totals per season to allow for outliers in every game.  Given this, we will replace any outliers with the median for the data set. Limits we set included: > 4000 PITCHING_SO (25 strikeouts per game), > 5000 PITCHING_H (30 hits allowed per game), > 2000 PITCHING_BB (13 walks per game) and > 480 FIELDING_E (3 errors per game).
+
+### Transform non-normal variables
+
+Finally, as mentioned earlier in our data exploration, and our findings from our histogram plots, we can see that some of our variables are highly skewed. To address this, we decided to perform some transformations to make them more normally distributed. Here are some plots to demonstrate the changes in distributions before and after the transformations:  
+
+```{r echo=FALSE, fig.height=12, fig.width=10, message=FALSE, warning=FALSE}
+
+# created empty data frame to store transformed variables
+df_temp <- data.frame(matrix(ncol = 1, nrow = length(clean_df$TARGET_WINS)))
+
+# performed boxcox transformation after identifying proper lambda
+df_temp$BATTING_3B <- clean_df$BATTING_3B
+batting3b_lambda <- BoxCox.lambda(clean_df$BATTING_3B)
+df_temp$BATTING_3B_transform <- log(clean_df$BATTING_3B)
+
+# performed boxcox transformation after identifying proper lambda
+df_temp$BATTING_HR <- clean_df$BATTING_HR
+battingHR_lambda <- BoxCox.lambda(clean_df$BATTING_HR)
+df_temp$BATTING_HR_transform <- BoxCox(clean_df$BATTING_HR, battingHR_lambda)
+
+# performed a log transformation
+df_temp$PITCHING_BB <- clean_df$PITCHING_BB
+df_temp$PITCHING_BB_transform <- log(clean_df$PITCHING_BB)
+
+# performed a log transformation
+df_temp$PITCHING_SO <- clean_df$PITCHING_SO
+df_temp$PITCHING_SO_transform <- log(clean_df$PITCHING_SO)
+
+# performed an inverse log transformation
+df_temp$FIELDING_E <- clean_df$FIELDING_E
+df_temp$FIELDING_E_transform <- 1/log(clean_df$FIELDING_E)
+
+# performed a log transformation
+df_temp$BASERUN_SB <- clean_df$BASERUN_SB
+df_temp$BASERUN_SB_transform <- log(clean_df$BASERUN_SB)
+
+df_temp <- df_temp[, 2:13]
+
+histbox(df_temp, c(6, 2))
+```
+
+
+### Finalizing the dataset for model building 
+
+With our transformations complete, we can now add these into our `clean_df` dataframe and continue on to build our models.
+
+```{r}
+# Build clean dataframe with transformation
+clean_df <- data.frame(cbind(clean_df, 
+                        BATTING_3B_transform = df_temp$BATTING_3B_transform,
+                        BATTING_HR_transform = df_temp$BATTING_HR_transform,
+                        BASERUN_SB_transform = df_temp$BASERUN_SB_transform,
+                        PITCHING_BB_transform = df_temp$PITCHING_BB_transform,
+                        PITCHING_SO_transform = df_temp$PITCHING_SO_transform,
+                        FIELDING_E_transform = df_temp$FIELDING_E_transform))
+
+is.na(clean_df) <- sapply(clean_df, is.infinite)
+
+# Impute missing value with the mean
+mean = mean(clean_df$BATTING_3B_transform, na.rm = TRUE)
+mean2 = mean(clean_df$BASERUN_SB_transform, na.rm = TRUE)
+mean3 = mean(clean_df$PITCHING_SO_transform, na.rm = TRUE)
+
+clean_df$BATTING_3B_transform[is.na(clean_df$BATTING_3B_transform)] <- mean
+clean_df$BASERUN_SB_transform[is.na(clean_df$BASERUN_SB_transform)] <- mean2
+clean_df$PITCHING_SO_transform[is.na(clean_df$PITCHING_SO_transform)] <- mean3
+```
+
+
+## 3. Build Models
+
+*Using the training data set, build at least three different multiple linear regression models, using different variables (or the same variables with different transformations). Since we have not yet covered automated variable selection methods, you should select the variables manually (unless you previously learned Forward or Stepwise selection, etc.). Since you manually selected a variable for inclusion into the model or exclusion into the model, indicate why this was done.* 
+*Discuss the coefficients in the models, do they make sense? For example, if a team hits a lot of Home Runs, it would be reasonably expected that such a team would win more games. However, if the coefficient is negative (suggesting that the team would lose more games), then that needs to be discussed. Are you keeping the model even though it is counter intuitive? Why? The boss needs to know.* 
+
+### Model-building methodology  
+
+With a solid understanding of our dataset at this point, and with our data cleaned, we can now start to build out some of our multiple linear regression models.  
+
+First, we decided to split our cleaned dataset into a training and testing set (80% training, 20% testing). Then, using our training dataset, we decided to run a multiple linear regression model (Model #1) that included all non-transformed features that we hadn't removed following our data cleaning process mentioned above. Next, in Model #2, to help us select the optimal set of features, we ran the `stepAIC` function in R to perform stepwise selection on our initial model to help reduce the number of features and address some of our multicollinearity issues from Model #1 (explained more below). Finally, our last model (Model #3) included all data from our cleaned dataset, but also contained some of our transformed features in replacement of their non-transformed counterparts. Additionally, we ran this model through stepwise selection as well to determine the optimal set of features and to reduce multicollinearity as much as possible.  
+
+
+### Examining our model coefficients  
+
+Throughout our model-building process, we noticed that many of our model outputs yielded a few coefficient values that seemed to contradict our initial estimates. For instance, in Model #1:  
+
+**Negative values for coefficients that we'd expect to be positive**
+
++ BATTING_2B - logically more doubles hit by batters would increase the likelihood of winning more games  
++ BATTING_HR - logically more homeruns hit by batters would increase the likelihood of winning more games  
++ PITCHING_SO - logically more strikeouts thrown by pitchers would increase the likelihood of winning more games  
++ FIELDING_DP  - logically more double plays turned by a team would increase the likelihood of winning more games  
+
+**Positive values for coefficients that we'd expect to be negative**  
+
++ BATTING_SO  - logically more strikeouts by batters would lead to less of a likelihood of winning more games  
++ PITCHING_H - logically more hits given up by pitchers would lead to less of a likelihood of winning more games  
++ PITCHING_HR - logically more homeruns given up by pitchers would lead to less of a likelihood of winning more games  
+
+This is a trend we saw throughout the three models that we built, although Model #3 was able to adjust for this better than our first two models -- we can likely attribute this phenomenon to multicollinearity. Since we noticed in our initial data exploration that many variables in the dataset were highly correlated with one another (i.e. BATTING_2B and BATTING_HR), this phenomenon likely is increasing the variance of the coefficient estimates, making them difficult to interpret (and in some cases such as the features listed above, they are switching the signs). This was also supported by our Variance Inflation Factor (VIF) tests, which showed high values for features such as BATTING_HR, BATTING_SO, PITCHING_HR, and PITCHING_SO. In our final model (Model #3), we made sure to keep this in mind in order to get a better handle on our coefficients and reduce multicollinearity -- mainly, we removed certain variables that had high VIF scores through our stepwise selection process. Later in our discussion, we'll discuss whether or not we'd keep our final model based on this issue.  
+
+### Model 1  
+
+Below is our initial multiple linear regression model that includes all features from our cleaned dataset.
+
+```{r echo=FALSE}
+# Splitting the dataset into train/testing set with 80/20 split
+set.seed(3)
+df_split <- initial_split(clean_df, prop = 0.8)
+df_train <- training(df_split)
+df_test <- testing(df_split)
+
+# Model 1 - Include all features and leverage stepAIC to help identify ideal features
+
+multi_lm <- lm(TARGET_WINS ~ BATTING_H + BATTING_2B + BATTING_3B + BATTING_HR + BATTING_BB + BATTING_SO + BASERUN_SB + BASERUN_CS + PITCHING_H + PITCHING_HR + PITCHING_BB + PITCHING_SO + FIELDING_E + FIELDING_DP, df_train)
+(lm_s <- summary(multi_lm))
+confint(multi_lm)
+residPlot(lm_s)
+```
+
+ 
+We can explicitly call out our variable importances using the Caret package which will determine our feature importance for each of the multiple linear regression models individually.
+
+We also examine the VIF of our variables to check for multicolinearity in the model.
+
+```{r echo=FALSE}
+# Display Variable feature importance plot
+variableImportancePlot(multi_lm, "Model 1 LM Variable Importance")
+
+# print variable inflation factor score
+print('VIF scores of predictors')
+
+VIF(multi_lm)
+```
+
+### Model 2  
+
+In our second model, below, we decided to use stepwise selection in order to help us determine the optimal set of features from our original, cleaned dataset.
+
+```{r echo=FALSE}
+# Build model 2 - this is Model 1 with only significant features (using stepAIC)
+mult_lm_final <- stepAIC(multi_lm, direction = "both",
+                         scope = list(upper = multi_lm, lower = ~ 1),
+                         scale = 0, trace = FALSE)
+# Display Model 2 Summary
+(lmf_s <- summary(mult_lm_final))
+
+# Display Model 2 REsidual plots
+residPlot(lmf_s)
+```
+
+
+
+```{r echo=FALSE}
+# Display Variable feature importance plot
+variableImportancePlot(mult_lm_final, "Model 2 LM Variable Importance")
+
+# print variable inflation factor score
+print('VIF scores of predictors')
+
+VIF(mult_lm_final)
+```
+
+### Model 3
+
+In our third model, we decided to utilize some of our transformed variables to compare against our initial model. Additionally, similar to model 2, we used stepwise selection to determine feature importance and select the simplest model possible.
+
+```{r echo=FALSE}
+
+# Model 3 - Build linear model
+multi_lm_2 <- lm(TARGET_WINS ~ BATTING_H + BATTING_2B + BATTING_3B_transform + BATTING_HR_transform + BATTING_BB + BATTING_SO + BASERUN_SB_transform + BASERUN_CS + PITCHING_H + PITCHING_HR + PITCHING_BB_transform + PITCHING_SO_transform + FIELDING_E_transform + FIELDING_DP, df_train)
+
+# Model 3 - Show model summary info
+(lm_s_2 <- summary(multi_lm_2))
+
+# Model 3 - Show Confidence and Residual Plots
+confint(multi_lm_2)
+residPlot(lm_s_2)
+
+# Model 3 - use stepAIC to select significant features
+mult_lm_final_2 <- stepAIC(multi_lm_2, direction = "both",
+                         scope = list(upper = multi_lm_2, lower = ~ 1),
+                         scale = 0, trace = FALSE)
+
+# Model 3 - Show summary of revised model with only significant features included
+(lmf_s_2 <- summary(mult_lm_final_2))
+
+# model 3 - Show residual plots
+residPlot(lmf_s_2)
+```
+
+We can assess variable importance of our model with our original dataset (model 2) to our transformed dataset (model 3) as shown below. We notice that "Batting_BB" and "Batting_H" are much closer together in terms of weight in predicting target_wins than in model 1 (pre-transformed)
+
+```{r echo=FALSE}
+# Model 3 - Show feature importance in final model after stepAIC
+variableImportancePlot(mult_lm_final_2, "Model 3 LM Variable Importance")
+
+# Model 3 - show Variance Inflation Factor score
+print('VIF scores of predictors')
+
+VIF(mult_lm_final_2)
+```
+
+## 4. Model Selection & Analysis 
+
+*For the multiple linear regression model, will you use a metric such as Adjusted R2, RMSE, etc.? Be sure to explain how you can make inferences from the model, discuss multi-collinearity issues (if any), and discuss other relevant model output. Using the training data set, evaluate the multiple linear regression model based on (a) mean squared error, (b) R2, (c) F-statistic, and (d) residual plots. Make predictions using the evaluation data set.*
+
+The following table discusses each of the model performance metrics on the training dataset. These values indicate there is a minor improvement in model performance after applying transformations and selecting for significant parameters.  
+
+All models achieved a positive adjusted R^2 pointing to a weakly-positive relationship between the target variable TOTAL_WINs and the model predictor variables. 
+
+From the previous section and residual diagnostics (both the residual histogram and QQ plot)--all three models have normally distributed residuals with mean 0. There appears to be no heteroskedasticity (non-constant variance) or serial-correlation within the residuals--thus strictly from a linear regression perspective, none of the assumptions are violated and thus we can make inferential predictions based on our model. 
+
+Next looking at the F-statistic for all models were large and achieved a statistically significant p-value than than a default alpha of .05; thus for all three models the Null hypothesis that is rejected that 0s for our regression coefficients would fit the data better. 
+
+From the exploratory data analysis we saw that many of the predictor variables were correlated with each other--this makes sense given that baseball is a team sport, and thus different position scoring/runs helps contribute to wins. However this could be an issue from a multicolinearity, that can lead to unstable regression fits. From the previous section we used VIF (Variable Inflation Factor) to gauge better models by preferring VIF values less than 5. 
+
+
+```{r}
+
+# Build summary table with each model performance metrics
+SummaryTable <- bind_rows(
+  model_performance_extraction(lm_s),
+  model_performance_extraction(lmf_s),
+  model_performance_extraction(lmf_s_2)
+) 
+
+# Add row names
+rownames(SummaryTable) <- c("Model 1", "Model 2", "Model 3")
+
+# Display nice format table
+SummaryTable %>% 
+  kable() %>% 
+  kable_styling(
+    bootstrap_options = c("hover", "condensed", "responsive"),
+    full_width = F)
+```
+
+The following figure represents the performance of 3 of the models on both the testing and on the training dataset. for this multiple linear regression problem, the adjusted R2 value was used as the metric for performance on predicting the target wins.
+
+```{r, message = F}
+# Build prediction results dataset for plotting (each model with training and test data)
+results <- multi_lm %>%
+  predict(df_train) %>% 
+  as.data.frame() %>% 
+  mutate(Predicted = df_train$TARGET_WINS, model = "Model 1") %>% 
+  bind_rows(mult_lm_final %>% 
+              predict(df_train) %>% 
+              as.data.frame() %>% 
+              mutate(Predicted = df_train$TARGET_WINS, model = "Model 2"),
+            mult_lm_final_2 %>% 
+              predict(df_train) %>% 
+              as.data.frame() %>% 
+              mutate(Predicted = df_train$TARGET_WINS, model = "Model 3")) %>% 
+  rename("Observed" = ".") %>% 
+  mutate(dataset = "Training Set") %>% 
+  bind_rows(
+    results_test <- multi_lm %>%
+      predict(df_test) %>% 
+      as.data.frame() %>%
+      mutate(Predicted = df_test$TARGET_WINS, model = "Model 1") %>% 
+      bind_rows(mult_lm_final %>% 
+                  predict(df_test) %>% 
+                  as.data.frame() %>% 
+                  mutate(Predicted = df_test$TARGET_WINS, model = "Model 2"),
+                mult_lm_final_2 %>% 
+                  predict(df_test) %>% as.data.frame() %>% 
+                  mutate(Predicted = df_test$TARGET_WINS, model = "Model 3")) %>% 
+      rename("Observed" = ".") %>% 
+      mutate(dataset = "Testing Set")
+  )
+
+# Plot each model with datapoints, model prediction line and R^2
+results %>% 
+  ggplot(mapping = aes(x = Observed, y = Predicted)) +
+  geom_point(pch =21, alpha = 0.3, fill = "skyblue") +
+  geom_smooth(method = "lm", color = "red3") +
+  facet_wrap(dataset~model) +
+  stat_poly_eq(aes(label = paste(..adj.rr.label.., sep = "~~~")), 
+                   label.x.npc = "left", label.y.npc = .9,
+                   formula = y~x, parse = TRUE, size = 3.5)+
+  theme(panel.background = element_blank(),
+        panel.grid = element_blank())
+
+```
+
+The analysis shows the following results:
+
+Model 1 - This model is based on the all predictors on an un-transformed dataset. Results for this model provided an R^2 of about 
+of 0.31 on the training set and 0.3 on the testing dataset. 
+
+Model 2 - This model is based on a subset of significant predictors on an un-transformed dataset. Results for this model provided an R^2 of about 
+of 0.31 on the training set and 0.31 on the testing dataset. 
+
+Model 3 - This model is based on a subset of significant predictors on an transformed dataset. Results for this model provided an R^2 of about 
+of 0.31 on the training set and 0.31 on the testing dataset.
+
+### Model of choice  
+
+Based on these analyses, Model 2 and Model 3 both performed marginally better than Model 1 and could be selected as the linear model of choice when looking at adjusted R2. However, there is greater statistical significance under the third model relative to the others and uses less unnecessary variables to compute our prediction without sacrificing much in terms of adjusted R^2 value. Additionally, Model 3 seems to have lower VIF scores than Models 1 and 2. Because of these factors, as well as its better adjustment for multicollinearity (we noticeably saw less sign-flipping in coefficients), model 3 would be the model of choice. 
+
+
+## References
+
+- A Modern Approach to Regression with R: Simon Sheather
+- Linear Models with R: Julian Faraway. 
+- R package vignette, [mixtools: An R Package for Analyzing Finite Mixture Models](https://cran.r-project.org/web/packages/mixtools/vignettes/mixtools.pdf)
+- [7 Classic OLS assumptions](https://statisticsbyjim.com/regression/ols-linear-regression-assumptions/)
+- [Detecting Multicolinearity with VIF](https://online.stat.psu.edu/stat462/node/180/)
+
+
+## Appendix
+
+### A. Moneyball Dataset Columns
+
+* INDEX: Identification Variable(Do not use)
+* TARGET_WINS: Number of wins
+* TEAM_BATTING_H : Base Hits by batters (1B,2B,3B,HR)
+* TEAM_BATTING_2B: Doubles by batters (2B)
+* TEAM_BATTING_3B: Triples by batters (3B)
+* TEAM_BATTING_HR: Home runs by batters (4B)
+* TEAM_BATTING_BB: Walks by batters
+* TEAM_BATTING_HBP: Batters hit by pitch (get a free base)
+* TEAM_BATTING_SO: Strikeouts by batters
+* TEAM_BASERUN_SB: Stolen bases
+* TEAM_BASERUN_CS: Caught stealing
+* TEAM_FIELDING_E: Errors
+* TEAM_FIELDING_DP: Double Plays
+* TEAM_PITCHING_BB: Walks allowed
+* TEAM_PITCHING_H: Hits allowed
+* TEAM_PITCHING_HR: Homeruns allowed
+* TEAM_PITCHING_SO: Strikeouts by pitchers
+
+### R Code
+
+```
+# =====================================================================================
+# Load Libraries and Define Helper functions 
+# =====================================================================================
+
+library(MASS)
+library(rpart.plot)
+library(ggplot2)
+library(ggfortify)
+library(gridExtra)
+library(forecast)
+library(fpp2)
+library(fma)
+library(kableExtra)
+library(e1071)
+library(mlbench)
+library(ggcorrplot)
+library(DataExplorer)
+library(timeDate)
+library(caret)
+library(GGally)
+library(corrplot)
+library(RColorBrewer)
+library(tibble)
+library(tidyr)
+library(tidyverse)
+library(dplyr)
+library(reshape2)
+library(mixtools)
+library(tidymodels)
+library(ggpmisc)
+library(regclass)
+
+#' Print a side-by-side Histogram and QQPlot of Residuals
+#'
+#' @param model A model
+#' @examples
+#' residPlot(myModel)
+#' @return null
+#' @export
+residPlot <- function(model) {
+  # Make sure a model was passed
+  if (is.null(model)) {
+    return
+  }
+  
+  layout(matrix(c(1,1,2,3), 2, 2, byrow = TRUE))
+  plot(residuals(model))
+  hist(model[["residuals"]], freq = FALSE, breaks = "fd", main = "Residual Histogram",
+       xlab = "Residuals",col="lightgreen")
+  lines(density(model[["residuals"]], kernel = "ep"),col="blue", lwd=3)
+  curve(dnorm(x,mean=mean(model[["residuals"]]), sd=sd(model[["residuals"]])), col="red", lwd=3, lty="dotted", add=T)
+  qqnorm(model[["residuals"]], main = "Residual Q-Q plot")
+  qqline(model[["residuals"]],col="red", lwd=3, lty="dotted")
+  par(mfrow = c(1, 1))
+}
+
+#' Print a Variable Importance Plot for the provided model
+#'
+#' @param model The model
+#' @param chart_title The Title to show on the plot
+#' @examples
+#' variableImportancePlot(myLinearModel, 'My Title)
+#' @return null
+#' @export
+variableImportancePlot <- function(model=NULL, chart_title='Variable Importance Plot') {
+  # Make sure a model was passed
+  if (is.null(model)) {
+    return
+  }
+  
+  # use caret and gglot to print a variable importance plot
+  varImp(model) %>% as.data.frame() %>% 
+    ggplot(aes(x = reorder(rownames(.), desc(Overall)), y = Overall)) +
+    geom_col(aes(fill = Overall)) +
+    theme(panel.background = element_blank(),
+          panel.grid = element_blank(),
+          axis.text.x = element_text(angle = 90)) +
+    scale_fill_gradient() +
+    labs(title = chart_title,
+         x = "Parameter",
+         y = "Relative Importance")
+}
+
+
+#' Print a Facet Chart of histograms
+#'
+#' @param df Dataset
+#' @param box Facet size (rows)
+#' @examples
+#' histbox(my_df, 3)
+#' @return null
+#' @export
+histbox <- function(df, box) {
+    par(mfrow = box)
+    ndf <- dimnames(df)[[2]]
+    
+    for (i in seq_along(ndf)) {
+            data <- na.omit(unlist(df[, i]))
+            hist(data, breaks = "fd", main = paste("Histogram of", ndf[i]),
+                 xlab = ndf[i], freq = FALSE)
+            lines(density(data, kernel = "ep"), col = 'red')
+    }
+    
+    par(mfrow = c(1, 1))
+}
+
+#' Extract key performance results from a model
+#'
+#' @param model A linear model of interest
+#' @examples
+#' model_performance_extraction(my_model)
+#' @return data.frame
+#' @export
+model_performance_extraction <- function(model=NULL) {
+  # Make sure a model was passed
+  if (is.null(model)) {
+    return
+  }
+  
+  data.frame("RSE" = model$sigma,
+             "Adj R2" = model$adj.r.squared,
+             "F-Statistic" = model$fstatistic[1])
+}
+
+# =====================================================================================
+# Load Data set
+# =====================================================================================
+
+# Load Moneyball baseball dataset
+df <- read.csv('datasets/moneyball-training-data.csv')
+df_eval <- read.csv('datasets/moneyball-evaluation-data.csv')
+
+# Remove superfluous TEAM_ from column names
+names(df) <- names(df) %>% 
+  str_replace_all('TEAM_', '')
+  
+# Drop the INDEX column - this won't be useful
+df <- df %>% 
+  dplyr::select(-INDEX)
+
+# =====================================================================================
+# Summary Stats 
+# =====================================================================================
+
+# Display summary statistics
+summary(df)
+
+# =====================================================================================
+# Distributions 
+# =====================================================================================
+
+# Prepare data for ggplot
+gather_df <- df %>% 
+  gather(key = 'variable', value = 'value')
+
+# Histogram plots of each variable
+ggplot(gather_df) + 
+  geom_histogram(aes(x=value, y = ..density..), bins=30) + 
+  geom_density(aes(x=value), color='blue') +
+  facet_wrap(. ~variable, scales='free', ncol=4)
+
+# Select BATTING_SO column and remove any missing data
+df_mix <- df %>% 
+  dplyr::select(BATTING_SO) %>%
+  drop_na()
+
+# Calculate mixed distributions for BATTING_SO
+batting_so_mix <- normalmixEM(df_mix$BATTING_SO, 
+                              lambda = .5, 
+                              mu = c(400, 1200), 
+                              sigma = 5, 
+                              maxit=60)
+
+# Simple plot to illustrate possible bimodal mix of groups
+plot(batting_so_mix, 
+     whichplots = 2,
+     density = TRUE, 
+     main2 = "BATTING_SO Possible Distributions", 
+     xlab2 = "BATTING_SO")
+     
+# =====================================================================================
+# Boxplots 
+# =====================================================================================
+
+# Prepare data for ggplot
+gather_df <- df %>% 
+  gather(key = 'variable', value = 'value')
+
+# Boxplots for each variable
+ggplot(gather_df, aes(variable, value)) + 
+  geom_boxplot() + 
+  facet_wrap(. ~variable, scales='free', ncol=6)
+
+# =====================================================================================
+# Variable Plots
+# =====================================================================================
+  
+# Plot scatter plots of each variable versus the target variable
+featurePlot(df[,2:ncol(df)], df[,1], pch = 20)
+
+# =====================================================================================
+# Missing Data 
+# =====================================================================================
+
+# Identify missing data by Feature and display percent breakout
+missing <- colSums(df %>% sapply(is.na))
+missing_pct <- round(missing / nrow(df) * 100, 2)
+stack(sort(missing_pct, decreasing = TRUE))
+
+# Drop the BATTING_HBP field
+df <- df %>% 
+  select(-BATTING_HBP)
+
+# We have chosen to impute the median as there are strong outliers that may skew the mean. Could revisit for advanced imputation via prediction later.
+no_outlier_df <- df
+
+# 4000 strikeouts is an average of 25 strikeouts per game, which is ridiculous.
+no_outlier_df$PITCHING_SO <- ifelse(no_outlier_df$PITCHING_SO > 4000, NA, no_outlier_df$PITCHING_SO)
+
+# 5000 hits is an average of 30 hits allowed per game, which is also ridiculous.
+no_outlier_df$PITCHING_H <- ifelse(no_outlier_df$PITCHING_H > 5000, NA, no_outlier_df$PITCHING_H)
+
+# 2000 walks is an average of 13 walks per game which is unlikely.
+no_outlier_df$PITCHING_BB <- ifelse(no_outlier_df$PITCHING_BB > 2000, NA, no_outlier_df$PITCHING_BB)
+
+# more than 480 errors is an average of 3 per game which is unlikely.
+no_outlier_df$FIELDING_E <- ifelse(no_outlier_df$FIELDING_E > 480, NA, no_outlier_df$FIELDING_E)
+
+clean_df <- no_outlier_df %>% 
+  impute(what = 'median') %>% as.data.frame()
+
+# From the plots, the team with 0 wins has 0 in multiple other categories. I believe this is missing data, not valid data.
+clean_df <- clean_df %>% 
+  filter(TARGET_WINS != 0)
+
+gather_clean_df <- clean_df %>% 
+  gather(key = 'variable', value = 'value', -TARGET_WINS)
+
+# =====================================================================================
+# Feature-Target Correlations 
+# =====================================================================================
+
+# Show feature correlations/target by decreasing correlation
+stack(sort(cor(clean_df[,1], clean_df[,2:ncol(clean_df)])[,], decreasing=TRUE))
+
+# =====================================================================================
+# Multicolinearity 
+# =====================================================================================
+
+correlation = cor(clean_df, use = 'pairwise.complete.obs')
+
+corrplot(correlation, 'ellipse', type = 'lower', order = 'hclust',
+         col=brewer.pal(n=8, name="RdYlBu"))
+
+# =====================================================================================
+# Transform non-normal variables 
+# =====================================================================================
+         
+
+# created empty data frame to store transformed variables
+df_temp <- data.frame(matrix(ncol = 1, nrow = length(clean_df$TARGET_WINS)))
+
+# performed boxcox transformation after identifying proper lambda
+df_temp$BATTING_3B <- clean_df$BATTING_3B
+batting3b_lambda <- BoxCox.lambda(clean_df$BATTING_3B)
+df_temp$BATTING_3B_transform <- log(clean_df$BATTING_3B)
+
+# performed boxcox transformation after identifying proper lambda
+df_temp$BATTING_HR <- clean_df$BATTING_HR
+battingHR_lambda <- BoxCox.lambda(clean_df$BATTING_HR)
+df_temp$BATTING_HR_transform <- BoxCox(clean_df$BATTING_HR, battingHR_lambda)
+
+# performed a log transformation
+df_temp$PITCHING_BB <- clean_df$PITCHING_BB
+df_temp$PITCHING_BB_transform <- log(clean_df$PITCHING_BB)
+
+# performed a log transformation
+df_temp$PITCHING_SO <- clean_df$PITCHING_SO
+df_temp$PITCHING_SO_transform <- log(clean_df$PITCHING_SO)
+
+# performed an inverse log transformation
+df_temp$FIELDING_E <- clean_df$FIELDING_E
+df_temp$FIELDING_E_transform <- 1/log(clean_df$FIELDING_E)
+
+# performed a log transformation
+df_temp$BASERUN_SB <- clean_df$BASERUN_SB
+df_temp$BASERUN_SB_transform <- log(clean_df$BASERUN_SB)
+
+df_temp <- df_temp[, 2:13]
+
+histbox(df_temp, c(6, 2))
+
+# =====================================================================================
+# Final Cleaned Dataframe with transformations
+# =====================================================================================
+
+# Build clean dataframe with transformation
+clean_df <- data.frame(cbind(clean_df, 
+                        BATTING_3B_transform = df_temp$BATTING_3B_transform,
+                        BATTING_HR_transform = df_temp$BATTING_HR_transform,
+                        BASERUN_SB_transform = df_temp$BASERUN_SB_transform,
+                        PITCHING_BB_transform = df_temp$PITCHING_BB_transform,
+                        PITCHING_SO_transform = df_temp$PITCHING_SO_transform,
+                        FIELDING_E_transform = df_temp$FIELDING_E_transform))
+
+is.na(clean_df) <- sapply(clean_df, is.infinite)
+
+# Impute missing value with the mean
+mean = mean(clean_df$BATTING_3B_transform, na.rm = TRUE)
+mean2 = mean(clean_df$BASERUN_SB_transform, na.rm = TRUE)
+mean3 = mean(clean_df$PITCHING_SO_transform, na.rm = TRUE)
+
+clean_df$BATTING_3B_transform[is.na(clean_df$BATTING_3B_transform)] <- mean
+clean_df$BASERUN_SB_transform[is.na(clean_df$BASERUN_SB_transform)] <- mean2
+clean_df$PITCHING_SO_transform[is.na(clean_df$PITCHING_SO_transform)] <- mean3
+
+# =====================================================================================
+# Model 1 (without stepAIC)
+# =====================================================================================
+
+# Splitting the dataset into train/testing set with 80/20 split
+set.seed(3)
+df_split <- initial_split(clean_df, prop = 0.8)
+df_train <- training(df_split)
+df_test <- testing(df_split)
+
+# Model 1 - Include all features and leverage stepAIC to help identify ideal features
+
+multi_lm <- lm(TARGET_WINS ~ BATTING_H + BATTING_2B + BATTING_3B + BATTING_HR + BATTING_BB + BATTING_SO + BASERUN_SB + BASERUN_CS + PITCHING_H + PITCHING_HR + PITCHING_BB + PITCHING_SO + FIELDING_E + FIELDING_DP, df_train)
+(lm_s <- summary(multi_lm))
+confint(multi_lm)
+residPlot(lm_s)
+
+# Model 1 - Display Variable feature importance plot
+variableImportancePlot(multi_lm, "Model 1 LM Variable Importance")
+
+# model 1 - print variable inflation factor score
+print('VIF scores of predictors')
+
+VIF(multi_lm)
+
+# =====================================================================================
+# Model 2 (with stepAIC)
+# =====================================================================================
+
+# Build model 2 - this is Model 1 with only significant features (using stepAIC)
+mult_lm_final <- stepAIC(multi_lm, direction = "both",
+                         scope = list(upper = multi_lm, lower = ~ 1),
+                         scale = 0, trace = FALSE)
+# Display Model 2 Summary
+(lmf_s <- summary(mult_lm_final))
+
+# Display Model 2 REsidual plots
+residPlot(lmf_s)
+
+# model 2 - Display Variable feature importance plot
+variableImportancePlot(mult_lm_final, "Model 2 LM Variable Importance")
+
+# model 2 - print variable inflation factor score
+print('VIF scores of predictors')
+
+VIF(mult_lm_final)
+
+# =====================================================================================
+# Model 3 (with stepAIC and transformed features)
+# =====================================================================================
+
+# Model 3 - Build linear model
+multi_lm_2 <- lm(TARGET_WINS ~ BATTING_H + BATTING_2B + BATTING_3B_transform + BATTING_HR_transform + BATTING_BB + BATTING_SO + BASERUN_SB_transform + BASERUN_CS + PITCHING_H + PITCHING_HR + PITCHING_BB_transform + PITCHING_SO_transform + FIELDING_E_transform + FIELDING_DP, df_train)
+
+# Model 3 - Show model summary info
+(lm_s_2 <- summary(multi_lm_2))
+
+# Model 3 - Show Confidence and Residual Plots
+confint(multi_lm_2)
+residPlot(lm_s_2)
+
+# Model 3 - use stepAIC to select significant features
+mult_lm_final_2 <- stepAIC(multi_lm_2, direction = "both",
+                         scope = list(upper = multi_lm_2, lower = ~ 1),
+                         scale = 0, trace = FALSE)
+
+# Model 3 - Show feature importance in final model after stepAIC
+variableImportancePlot(mult_lm_final_2, "Model 3 LM Variable Importance")
+
+# Model 3 - show Variance Inflation Factor score
+print('VIF scores of predictors')
+
+VIF(mult_lm_final_2)
+
+# =====================================================================================
+# Select Models
+# =====================================================================================
+
+# Build summary table with each model performance metrics
+SummaryTable <- bind_rows(
+  model_performance_extraction(lm_s),
+  model_performance_extraction(lmf_s),
+  model_performance_extraction(lmf_s_2)
+) 
+
+# Add row names
+rownames(SummaryTable) <- c("Model 1", "Model 2", "Model 3")
+
+# Display nice format table
+SummaryTable %>% 
+  kable() %>% 
+  kable_styling(
+    bootstrap_options = c("hover", "condensed", "responsive"),
+    full_width = F)
+    
+# Build prediction results dataset for plotting (each model with training and test data)
+results <- multi_lm %>%
+  predict(df_train) %>% 
+  as.data.frame() %>% 
+  mutate(Predicted = df_train$TARGET_WINS, model = "Model 1") %>% 
+  bind_rows(mult_lm_final %>% 
+              predict(df_train) %>% 
+              as.data.frame() %>% 
+              mutate(Predicted = df_train$TARGET_WINS, model = "Model 2"),
+            mult_lm_final_2 %>% 
+              predict(df_train) %>% 
+              as.data.frame() %>% 
+              mutate(Predicted = df_train$TARGET_WINS, model = "Model 3")) %>% 
+  rename("Observed" = ".") %>% 
+  mutate(dataset = "Training Set") %>% 
+  bind_rows(
+    results_test <- multi_lm %>%
+      predict(df_test) %>% 
+      as.data.frame() %>%
+      mutate(Predicted = df_test$TARGET_WINS, model = "Model 1") %>% 
+      bind_rows(mult_lm_final %>% 
+                  predict(df_test) %>% 
+                  as.data.frame() %>% 
+                  mutate(Predicted = df_test$TARGET_WINS, model = "Model 2"),
+                mult_lm_final_2 %>% 
+                  predict(df_test) %>% as.data.frame() %>% 
+                  mutate(Predicted = df_test$TARGET_WINS, model = "Model 3")) %>% 
+      rename("Observed" = ".") %>% 
+      mutate(dataset = "Testing Set")
+  )
+
+# Plot each model with datapoints, model prediction line and R^2
+results %>% 
+  ggplot(mapping = aes(x = Observed, y = Predicted)) +
+  geom_point(pch =21, alpha = 0.3, fill = "skyblue") +
+  geom_smooth(method = "lm", color = "red3") +
+  facet_wrap(dataset~model) +
+  stat_poly_eq(aes(label = paste(..adj.rr.label.., sep = "~~~")), 
+                   label.x.npc = "left", label.y.npc = .9,
+                   formula = y~x, parse = TRUE, size = 3.5)+
+  theme(panel.background = element_blank(),
+        panel.grid = element_blank())
+```

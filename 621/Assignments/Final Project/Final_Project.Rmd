@@ -1,0 +1,416 @@
+---
+title: 'DS 621 Fall2020: Final Project (Group3)'
+subtitle: 'CO2 Emissions Regression'
+author: 'Zach Alexander, Sam Bellows, Donny Lofland, Joshua Registe, Neil Shah, Aaron Zalki'
+data: '11/20/2020'
+output:
+  html_document:  
+    theme: cerulean
+    highlight: pygments
+    css: https://raw.githubusercontent.com/djlofland/DS621_F2020_Group3/master/Homework_4/lab.css
+    toc: true
+    toc_float: true
+  pdf_document:
+    extra_dependencies: ["geometry", "multicol", "multirow", "xcolor"]
+---
+
+
+Source code: [https://github.com/djlofland/DS621_F2020_Group3/tree/master/Final%20Project](https://github.com/djlofland/DS621_F2020_Group3/tree/master/Final%20Project)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+library(MASS)
+library(scales)
+library(rpart.plot)
+library(ggplot2)
+library(ggfortify)
+library(gridExtra)
+library(forecast)
+library(fpp2)
+library(fma)
+library(kableExtra)
+library(e1071)
+library(mlbench)
+library(ggcorrplot)
+library(DataExplorer)
+library(timeDate)
+library(caret)
+library(GGally)
+library(corrplot)
+library(RColorBrewer)
+library(tibble)
+library(tidyr)
+library(tidyverse)
+library(tidyselect)
+library(dplyr)
+library(reshape2)
+library(mixtools)
+library(tidymodels)
+library(ggpmisc)
+library(regclass)
+library(pROC)
+library(skimr)
+library(naniar)
+library(RANN)
+library(kableExtra)
+library(readxl)
+#' Print a side-by-side Histogram and QQPlot of Residuals
+#'
+#' @param model A model
+#' @examples
+#' residPlot(myModel)
+#' @return null
+#' @export
+residPlot <- function(model) {
+  # Make sure a model was passed
+  if (is.null(model)) {
+    return
+  }
+  
+  layout(matrix(c(1,1,2,3), 2, 2, byrow = TRUE))
+  plot(residuals(model))
+  hist(model[["residuals"]], freq = FALSE, breaks = "fd", main = "Residual Histogram",
+       xlab = "Residuals",col="lightgreen")
+  lines(density(model[["residuals"]], kernel = "ep"),col="blue", lwd=3)
+  curve(dnorm(x,mean=mean(model[["residuals"]]), sd=sd(model[["residuals"]])), col="red", lwd=3, lty="dotted", add=T)
+  qqnorm(model[["residuals"]], main = "Residual Q-Q plot")
+  qqline(model[["residuals"]],col="red", lwd=3, lty="dotted")
+  par(mfrow = c(1, 1))
+}
+#' Print a Variable Importance Plot for the provided model
+#'
+#' @param model The model
+#' @param chart_title The Title to show on the plot
+#' @examples
+#' variableImportancePlot(myLinearModel, 'My Title)
+#' @return null
+#' @export
+variableImportancePlot <- function(model=NULL, chart_title='Variable Importance Plot') {
+  # Make sure a model was passed
+  if (is.null(model)) {
+    return
+  }
+  
+  # use caret and gglot to print a variable importance plot
+  varImp(model) %>% as.data.frame() %>% top_n(n = 6) %>% 
+    ggplot(aes(x = reorder(rownames(.), desc(Overall)), y = Overall)) +
+    geom_col(aes(fill = Overall)) +
+    theme(panel.background = element_blank(),
+          panel.grid = element_blank(),
+          axis.text.x = element_text(angle = 90)) +
+    scale_fill_gradient() +
+    labs(title = chart_title,
+         x = "Parameter",
+         y = "Relative Importance")
+}
+#' Print a Facet Chart of histograms
+#'
+#' @param df Dataset
+#' @param box Facet size (rows)
+#' @examples
+#' histbox(my_df, 3)
+#' @return null
+#' @export
+histbox <- function(df, box) {
+    par(mfrow = box)
+    ndf <- dimnames(df)[[2]]
+    
+    for (i in seq_along(ndf)) {
+            data <- na.omit(unlist(df[, i]))
+            hist(data, breaks = "fd", main = paste("Histogram of", ndf[i]),
+                 xlab = ndf[i], freq = FALSE)
+            lines(density(data, kernel = "ep"), col = 'red')
+    }
+    
+    par(mfrow = c(1, 1))
+}
+#' Extract key performance results from a model
+#'
+#' @param model A linear model of interest
+#' @examples
+#' model_performance_extraction(my_model)
+#' @return data.frame
+#' @export
+model_performance_extraction <- function(model=NULL) {
+  # Make sure a model was passed
+  if (is.null(model)) {
+    return
+  }
+  
+  data.frame("RSE" = model$sigma,
+             "Adj R2" = model$adj.r.squared,
+             "F-Statistic" = model$fstatistic[1])
+}
+#' Initial cleaning of the dataset
+#'
+#' @dataset dataset being cleaned, specific to insurance datasets
+#' @return data.frame
+#' @export
+initial_cleaning<- function(dataset){
+  
+  dataset<-dataset %>% 
+    dplyr::select(-INDEX) %>% 
+    #converting the currency based columns to numeric
+    mutate_at(vars(c("INCOME","HOME_VAL","OLDCLAIM","BLUEBOOK")),~as.numeric(str_replace_all(.,c("\\$"="","\\,"="")))) %>% 
+    mutate_at(vars("TARGET_FLAG"),as.factor)
+  
+  return(dataset)
+}
+```
+
+## Abstract
+
+250 words or less
+
+## Introduction
+
+Include background and motivation of problem
+
+```{r}
+kaggledf<-read.csv("https://raw.githubusercontent.com/djlofland/DS621_F2020_Group3/master/Final%20Project/datasets/Kaggle%20CO2/CO2%20Emissions_Canada.csv")
+
+ca_registrations <- read_excel('datasets/Kaggle CO2/Car Registrations 2018 CA.xlsx')
+```
+
+## Methodology
+
+### Summary Stats
+
+```{r}
+knitr::kable(skim(kaggledf)) %>% kable_styling()
+```
+
+
+
+### Distributions
+
+```{r fig.height=10, fig.width=14}
+DataExplorer::plot_bar(
+  data = kaggledf,
+         order_bar = T,
+         ggtheme=theme_bw())
+```
+
+
+```{r, echo=FALSE}
+DataExplorer::plot_histogram(
+  geom_histogram_args = list(alpha = 0.5),
+   data = kaggledf,
+         ggtheme=theme_bw())
+```
+
+
+
+### Boxplots
+
+```{r}
+# Prepare data for ggplot
+gather_df <- kaggledf %>% select(CO2.Emissions.g.km., Engine.Size.L., Fuel.Consumption.City..L.100.km., Fuel.Consumption.Hwy..L.100.km., Fuel.Consumption.Comb..L.100.km., Fuel.Consumption.Comb..mpg.) %>% 
+  gather(key = 'variable', value = 'value')
+
+# Histogram plots of each variable
+ggplot(gather_df) + 
+  geom_boxplot(aes(y=value)) +
+  facet_wrap(. ~variable, scales='free', ncol=3)
+```
+
+
+
+
+
+### Variable Plots
+
+```{r}
+DataExplorer::plot_scatterplot(
+    data = dplyr::select_if(kaggledf,is.numeric),
+    by = "CO2.Emissions.g.km.",
+         ggtheme=theme_bw(),
+    theme_config = list(axis.text.x = element_text(angle = 90)))
+```
+
+
+
+### Data Sparsity Check
+
+```{r}
+DataExplorer::plot_missing(kaggledf, ggtheme = theme_bw())
+#gg_miss_upset(kaggledf)
+```
+
+### Data Preparation
+
+The dataset was very clean as it was taken from kaggle which usually provides quite clean datasets. We will analyze to see whether or not there is a need for outlier removal or variable transformation, but no other data preparation is required besides this.
+
+### Removed Fields
+
+No fields were removed, as all fields may be relevant to the target variable and no fields contain a large number of missing values.
+
+### Near Zero Variance
+
+```{r}
+x = nearZeroVar(kaggledf, saveMetrics=T)
+knitr::kable(x) %>% kable_styling
+```
+
+None of the features have a near zero variance, meaning we do not need to remove any features due to lack of variance.
+
+### Outliers
+
+Looking at our boxplots, the features have no clear outliers that extend far beyond the other points. As such, there is no need to remove outliers from our data.
+
+### Transform non-normal variables
+
+```{r}
+# separate our features from target so we don't inadvertently transform the target
+training_x <- kaggledf %>% select(-CO2.Emissions.g.km., -Make, -Model, -Vehicle.Class, -Cylinders, -Transmission, -Fuel.Type)
+training_y <- kaggledf$CO2.Emissions.g.km.
+
+training_disc <- kaggledf %>% select(Make, Model, Vehicle.Class, Cylinders, Transmission, Fuel.Type)
+
+imputation <- preProcess(training_x, method = c('BoxCox'))
+
+training_x_imp <- predict(imputation, training_x)
+
+temp_df <- cbind(training_y, training_x_imp) %>%
+  as.data.frame() %>%
+  rename(TARGET = training_y)
+
+histbox(temp_df, c(3, 2))
+```
+
+
+
+```{r}
+# Calculate and plot the Multicolinearity
+correlation = cor(temp_df, use = 'pairwise.complete.obs')
+
+corrplot(correlation, 'ellipse', type = 'lower', order = 'hclust',
+         col=brewer.pal(n=8, name="RdYlBu"))
+```
+
+
+```{r}
+cleandf <- transform(merge(temp_df, training_disc, by=0 ,all=TRUE), row.names=as.numeric(Row.names), Row.names=NULL)
+cleandf <- cleandf[order(as.numeric(rownames(cleandf))),,drop=FALSE]
+
+# removing these features for now since there are to many groupings
+cleandf <- cleandf %>% select(-Make, -Model)
+```
+
+There is some strong multicollinearity between engine size and the fuel consumption features. We may need to remove one of these features when it comes time to train the model in order to assure model stability.
+
+## Experimentation & Results
+
+### Modeling
+
+```{r}
+set.seed(123456)
+```
+
+
+```{r}
+# utilizing one dataset for all four models
+cleaneddfTrain <- createDataPartition(cleandf$TARGET, p=0.8, list=FALSE)
+cleaneddftraining <- cleandf[cleaneddfTrain,]
+cleaneddftesting <- cleandf[-cleaneddfTrain,]
+```
+
+### Model 1: Exploratory, demonstrates that engine size and fuel consumption predictive of emissions
+```{r}
+model1 <- lm(TARGET ~ ., data = temp_df)
+summary(model1)
+tidy(model1)
+linvp1<-variableImportancePlot(model1)
+```
+
+### Model 2: All features
+
+```{r}
+model2 <- lm(TARGET ~ ., data = cleaneddftraining)
+summary(model2)
+
+model_performance<-
+bind_rows(#training data
+  data.frame("Actual" = cleaneddftraining$TARGET,
+           "Predicted" = predict(model2,cleaneddftraining)) %>% 
+    mutate(Model = "Model2",
+         Set = "Training"),
+#testing data
+  data.frame("Actual" = cleaneddftesting$TARGET,
+           "Predicted" = predict(model2,cleaneddftesting)) %>% 
+    mutate(Model = "Model2",
+         Set = "Testing")
+)
+
+linvp2<-variableImportancePlot(model2)
+
+
+```
+
+### Model 3: Only significant features
+
+```{r}
+# Build model 2 - this is Model 1 with only significant features (using stepAIC)
+model3 <- stepAIC(model2, direction = "both",
+                         scope = list(upper = model2, lower = ~ 1),
+                         scale = 0, trace = FALSE)
+# Display Model 2 Summary
+(model3_summary <- summary(model3))
+
+model_performance<-
+bind_rows(model_performance,
+ data.frame("Actual" = cleaneddftraining$TARGET,
+           "Predicted" = predict(model3,cleaneddftraining)) %>% 
+    mutate(Model = "Model3",
+         Set = "Training"),
+#testing data
+  data.frame("Actual" = cleaneddftesting$TARGET,
+           "Predicted" = predict(model3,cleaneddftesting)) %>% 
+    mutate(Model = "Model3",
+         Set = "Testing")
+)
+linvp3<-variableImportancePlot(model3)
+
+
+```
+
+
+```{r}
+model_performance %>% 
+  ggplot(mapping = aes(x = Actual, y = Predicted, color = Set))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  facet_wrap(Model~Set)+
+  theme(panel.background = element_blank(),
+        panel.border = element_blank())+
+  stat_poly_eq(aes(label = paste(..adj.rr.label.., sep = "~~~")), 
+                   label.x.npc = "left", label.y.npc = .9,
+                   formula = y~x, parse = TRUE, size = 3.5)
+```
+
+```{r fig.height=6, fig.width=10}
+grid.arrange(linvp1, linvp2, linvp3, ncol = 3)
+```
+
+
+## Conclusion
+
+We will select Model 3 as our emissions model, as it has the same performance as model 2 with fewer features, reducing the complexity of the regression problem. We will use this model to estimate the total emissions in the state of CA caused by vehicles with internal combusion engines to better understand the magnitude of the effect the ban on these engines will have on overall emissions. In order to do this, we will be using CA car registration data from here: https://www.cncda.org/wp-content/uploads/Cal-Covering-4Q-18.pdf
+
+```{r}
+preds <- predict(model3, cleandf) %>% as.data.frame()
+preds['Make'] <- sapply(kaggledf$Make, str_to_lower)
+preds_avg <- preds %>% group_by(Make) %>% summarize(avg_emissions = mean(.))
+ca_registrations$Make <- ca_registrations$Make %>% sapply(str_to_lower)
+vehicle_reg <- merge(preds_avg, ca_registrations) %>% mutate(Total = avg_emissions * Count)
+total_emissions <- sum(vehicle_reg$Total)
+knitr::kable(vehicle_reg) %>% kable_styling()
+total_emissions
+```
+
+We get a sum total of approximately 432,000,000 grams per km the average vehicle operator drives in CA. Given the Federal Highway Administration estimates that the average driver in the United States drives 13,500 miles per year or 21,726 km, we can estimate that per year, internal combustion engines release 9,386,000,000,000 grams per year, or 20,649,580,500 pounds of CO2 emissions per year. This is an enormous amount of CO2 emissions, and cutting into this will only benefit the CA and world environment.
+
+## References & Appendices

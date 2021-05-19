@@ -1,0 +1,101 @@
+Type,Make,Model,Make-Model,Registrations,Market Share
+Compact,Honda,Civic,Honda Civic,80190,24.9
+Compact,Toyota,Corolla,Toyota Corolla,48180,14.9
+Compact,Toyota,Prius,Toyota Prius,32781,10.2
+Compact,Nissan,Sentra,Nissan Sentra,30469,9.4
+Compact,Hyundai,Elantra,Hyundai Elantra,18906,5.9
+Compact SUV,Toyota,RAV4,Toyota RAV4,51815,17.7
+Compact SUV,Honda,CR-V,Honda CR-V,41309,14.1
+Compact SUV,Nissan,Rogue,Nissan Rogue,30594,10.4
+Compact SUV,Mazda,CX-5,Mazda CX-5,22680,7.7
+Compact SUV,Jeep,Wrangler,Jeep Wrangler,21354,7.3
+Compact/Mid Size Pickup,Toyota,Tacoma,Toyota Tacoma,44334,63.5
+Compact/Mid Size Pickup,Chevrolet,Colorado,Chevrolet Colorado,12004,17.2
+Compact/Mid Size Pickup,Nissan,Frontier/Xe,Nissan Frontier/Xe,6349,9.1
+Compact/Mid Size Pickup,GMC,Canyon,GMC Canyon,3928,5.6
+Compact/Mid Size Pickup,Honda,Ridgeline,Honda Ridgeline,2962,4.2
+Entry Luxury,Mercedes,CLA-Class,Mercedes CLA-Class,6310,30.7
+Entry Luxury,Audi,A3,Audi A3,5803,28.2
+Entry Luxury,BMW,I3,BMW I3,3988,19.4
+Entry Luxury,Acura,ILX,Acura ILX,2195,10.7
+Entry Luxury,BMW,2-Series,BMW 2-Series,2135,10.4
+Full Size Pickup,Ford,F Series,Ford F Series,54761,34
+Full Size Pickup,Chevrolet,Silverado,Chevrolet Silverado,41399,25.7
+Full Size Pickup,Ram,Pickup,Ram Pickup,34945,21.7
+Full Size Pickup,Toyota,Tundra,Toyota Tundra,13485,8.4
+Full Size Pickup,GMC,Sierra,GMC Sierra,13460,8.4
+Large,Dodge,Charger,Dodge Charger,9201,33.8
+Large,Chrysler ,300,Chrysler  300,5652,20.8
+Large,Toyota,Avalon,Toyota Avalon,4103,15.1
+Large,Nissan,Maxima,Nissan Maxima,2746,10.1
+Large,Chevrolet,Impala,Chevrolet Impala,2639,9.7
+Large SUV,Chevrolet,Tahoe,Chevrolet Tahoe,8163,31.4
+Large SUV,Chevrolet,Suburban,Chevrolet Suburban,3727,14.3
+Large SUV,GMC,Yukon,GMC Yukon,3452,13.3
+Large SUV,Ford,Expedition,Ford Expedition,3043,11.7
+Large SUV,Ford,Flex,Ford Flex,2680,10.3
+Large Van,Ford,Transit Connect Van,Ford Transit Connect Van,14948,40.9
+Large Van,Mercedes,Sprinter,Mercedes Sprinter,4691,12.8
+Large Van,Ram,Promaster,Ram Promaster,4494,12.3
+Large Van,Nissan,NV,Nissan NV,4320,11.8
+Large Van,Chevrolet,Express,Chevrolet Express,3926,10.7
+Luxury Compact SUV,Lexus,NX,Lexus NX,15072,17.7
+Luxury Compact SUV,Mercedes,GLC-Class,Mercedes GLC-Class,14712,17.3
+Luxury Compact SUV,Audi,Q5,Audi Q5,11975,14
+Luxury Compact SUV,Acura,RDX,Acura RDX,9056,10.6
+Luxury Compact SUV,BMW,X3,BMW X3,8890,10.4
+Luxury Large SUV,Land Rover,Range Rover,Land Rover Range Rover,4097,25.5
+Luxury Large SUV,Cadillac,Escalade,Cadillac Escalade,3916,24.4
+Luxury Large SUV,Mercedes,GLS-Class,Mercedes GLS-Class,3225,20.1
+Luxury Large SUV,Lincoln,Navigator,Lincoln Navigator,1619,10.1
+Luxury Large SUV,Mercedes,G-Class,Mercedes G-Class,1098,6.8
+Luxury Mid Size SUV,Lexus,RX,Lexus RX,21516,23.3
+Luxury Mid Size SUV,Tesla,Model X,Tesla Model X,8925,9.6
+Luxury Mid Size SUV,Mercedes,GLE-Class,Mercedes GLE-Class,8830,9.5
+Luxury Mid Size SUV,BMW,X5,BMW X5,8584,9.3
+Luxury Mid Size SUV,Acura,MDX,Acura MDX,7289,7.9
+Luxury Sports Car,Mercedes,E-Class,Mercedes E-Class,11356,17.1
+Luxury Sports Car,BMW,5-Series,BMW 5-Series,11289,17
+Luxury Sports Car,Tesla,Model S,Tesla Model S,10120,15.2
+Luxury Sports Car,Mercedes,S-Class,Mercedes S-Class,4106,6.2
+Luxury Sports Car,Porsche,911,Porsche 911,2360,3.5
+Luxury Subcompact SUV,BMW,X1,BMW X1,6940,32.7
+Luxury Subcompact SUV,Mercedes,GLA-Class,Mercedes GLA-Class,5109,24.1
+Luxury Subcompact SUV,Audi,Q3,Audi Q3,3489,16.4
+Luxury Subcompact SUV,BMW,X2,BMW X2,2454,11.6
+Luxury Subcompact SUV,Volvo,XC40,Volvo XC40,1435,6.8
+Mid Size,Toyota,Camry,Toyota Camry,61553,27.8
+Mid Size,Honda,Accord,Honda Accord,59591,27
+Mid Size,Ford,Fusion,Ford Fusion,20871,9.4
+Mid Size,Nissan,Altima,Nissan Altima,18203,8.2
+Mid Size,Kia,Optima,Kia Optima,15239,6.9
+Mid Size SUV,Toyota,Highlander,Toyota Highlander,25831,12.9
+Mid Size SUV,Ford,Explorer,Ford Explorer,24651,12.4
+Mid Size SUV,Subaru,Outback,Subaru Outback,21088,10.6
+Mid Size SUV,Honda,Pilot,Honda Pilot,18594,9.3
+Mid Size SUV,Jeep,Grand Cherokee,Jeep Grand Cherokee,16457,8.2
+Mini Van,Honda,Odyssey,Honda Odyssey,14385,32.8
+Mini Van,Toyota,Sienna,Toyota Sienna,13001,29.7
+Mini Van,Chrysler,Pacifica,Chrysler Pacifica,8773,20
+Mini Van,Dodge,Caravan,Dodge Caravan,6073,13.9
+Mini Van,Kia,Sedona,Kia Sedona,1557,3.6
+Near Luxury,Tesla,Model 3,Tesla Model 3,51293,35.7
+Near Luxury,Mercedes,C-Class,Mercedes C-Class,17065,11.9
+Near Luxury,BMW,3-Series,BMW 3-Series,13026,9.1
+Near Luxury,Lexus,ES,Lexus ES,10400,7.2
+Near Luxury,BMW,4-Series,BMW 4-Series,7626,5.3
+Sports Cars,Ford,Mustang,Ford Mustang,10238,32.5
+Sports Cars,Dodge,Challenger,Dodge Challenger,8548,27.1
+Sports Cars,Chevrolet,Camaro,Chevrolet Camaro,6261,19.9
+Sports Cars,Mazda,MX5,Mazda MX5,1507,4.8
+Sports Cars,Hyundai,Veloster,Hyundai Veloster,1394,4.4
+Subcompact,Nissan,Versa,Nissan Versa,10037,15.8
+Subcompact,Chevrolet,Bolt,Chevrolet Bolt,9745,15.3
+Subcompact,Kia,Soul,Kia Soul,9478,14.9
+Subcompact,Honda,Fit,Honda Fit,6849,10.8
+Subcompact,Toyota,Yaris,Toyota Yaris,5752,9
+Subcompact SUV,Toyota,C-HR,Toyota C-HR,11786,19.4
+Subcompact SUV,Honda,HR-V,Honda HR-V,10659,17.5
+Subcompact SUV,Kia,Niro,Kia Niro,7104,11.7
+Subcompact SUV,Jeep,Renegade,Jeep Renegade,5995,9.9
+Subcompact SUV,Buick,Encore,Buick Encore,4393,7.2

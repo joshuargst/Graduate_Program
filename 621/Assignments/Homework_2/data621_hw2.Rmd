@@ -1,0 +1,349 @@
+---
+title: 'DS 621 (Fall 2020): Homework 2 (Group3)'
+subtitle: 'Classification Metrics'
+author: 'Zach Alexander, Sam Bellows, Donny Lofland, Joshua Registe, Neil Shah, Aaron Zalki'
+data: '10/23/2020'
+output:
+  html_document:
+    theme: cerulean
+    highlight: pygments
+    css: https://raw.githubusercontent.com/djlofland/DS621_F2020_Group3/master/Homework_2/lab.css
+    toc: true
+    toc_float: true
+  pdf_document:
+    extra_dependencies: ["geometry", "multicol", "multirow", "xcolor"]
+---
+
+Source code: [https://github.com/djlofland/DS621_F2020_Group3/tree/master/Homework_2](https://github.com/djlofland/DS621_F2020_Group3/tree/master/Homework_2)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+```
+
+
+```{r, warnings=FALSE, message=FALSE}
+library (ggplot2)
+library(pROC)
+library (caret)
+library (e1071)
+library(tidyverse)
+```
+
+## Overview
+
+This assignment will present various classification metrics through creating functions in R that will carry out these calculations. These calculations will be will be compared against built-in functions from various R packages and a graphical representation of these results will be presented.
+
+
+## 1. Download Dataset
+
+```{r, echo=TRUE}
+df <- read.csv ("https://raw.githubusercontent.com/djlofland/DS621_F2020_Group3/master/Homework_2/datasets/classification-output-data.csv", header=TRUE)
+```
+
+The dataset has three key columns we will use:
+
+`class` the actual class for the observation
+
+`scored.class`  the predicted class for the observation (based on a threshold of 0.5)
+
+`scored.probability`the predicted probability of success for the observation
+
+### Data Exploration
+
+```{r, echo=TRUE}
+summary(df) 
+```
+
+## 2. Raw Confusion Matrix
+
+```{r, echo=TRUE}
+(confusion_matrix <- table("Actual"= df$class, "Predicted"=df$scored.class))
+```
+
+Here is the raw confusion matrix with rows reflecting Actual and columns are Predicted. 
+
+## Custom Metric Functions
+
+### 3. Accuracy Function
+
+The following function returns the accuracy of the predictions.
+
+$$ Accuracy = \frac{TP + TN}{TP + FP + TN + FN}$$
+
+```{r, echo=TRUE}
+#' Return the accuracy of a given dataset.  Note: the dataframe should have an observed class and predicted class.
+#'
+#' @param df A dataframe
+#' @param observed Column name holding the class
+#' @param predicted Column name holding the predicted class
+#' @examples
+#' accuracy(myDF)
+#' @return float
+#' @export
+accuracy <- function(df=NULL, observed='class', predicted='scored.class') {
+  # Make sure a dataframe was passed and we have both class and predicted columns
+  if (is.null(df) || !any(names(df)==observed) || !any(names(df) == predicted)) {
+    return
+  }
+
+  # true negative, false negative, false positive, true positive
+  cols = c("TN", "FN", "FP", "TP")
+  confusion_matrix <- table("Actual" = df[[observed]], 
+                            "Predicted" = df[[predicted]])
+  
+  confusion_matrix <- data.frame(confusion_matrix, index = cols)
+  
+  # calculate accuracy
+  accuracy_value <- (confusion_matrix$Freq[4] + confusion_matrix$Freq[1]) / sum(confusion_matrix$Freq)
+  return(accuracy_value)
+}
+
+# test function
+(Accuracy <- accuracy(df))
+```
+
+### 4. Error Function
+
+$$ Error = \frac{FP + FN}{TP + FP + TN + FN}$$
+
+The following function returns the classification error rate of the predictions.
+
+```{r, echo=TRUE}
+error <- function(df) {
+  # true negative, false negative, false positive, true positive
+  cols = c("TN", "FN", "FP", "TP")
+  confusion_matrix <- table("Actual"=df$class, "Predicted"=df$scored.class)
+  confusion_matrix <- data.frame(confusion_matrix, index = cols)
+  
+  # calculate error
+  error_value <- (confusion_matrix$Freq[2] + confusion_matrix$Freq[3]) / sum(confusion_matrix$Freq)
+  return(error_value)
+}
+
+# test function
+(Error <- error(df))
+```
+
+We can verify the sum of the accuracy and error rates is equal to one.
+
+```{r, echo=TRUE}
+# check sum
+Accuracy + Error 
+```
+
+### 5. Precision Function
+
+$$ Precision = \frac{TP}{TP + FP }$$
+The following function returns the precision of the predictions.
+
+```{r, echo=TRUE}
+precision <- function(df) {
+  # true negative, false negative, false positive, true positive
+  cols = c("TN", "FN", "FP", "TP")
+  confusion_matrix <- table("Actual"=df$class, "Predicted"=df$scored.class)
+  confusion_matrix <- data.frame(confusion_matrix, index = cols)
+  
+  # calculate precision
+  error_value <- (confusion_matrix$Freq[4])/(confusion_matrix$Freq[4]+confusion_matrix$Freq[3])
+  return(error_value)
+}
+
+# test function
+precision(df)
+```
+
+### 6. Sensitivity Function
+
+$$ Sensitivity = \frac{TP}{TP + FN }$$
+The following function returns the sensitivity of the predictions.
+
+```{r, echo=TRUE}
+sensitivity <- function(df) {
+  # true negative, false negative, false positive, true positive
+  cols = c("TN", "FN", "FP", "TP")
+  confusion_matrix <- table("Actual"=df$class, "Predicted"=df$scored.class)
+  confusion_matrix <- data.frame(confusion_matrix, index = cols)
+  
+  # calculate sensitivity 
+  error_value <- (confusion_matrix$Freq[4])/(confusion_matrix$Freq[4]+confusion_matrix$Freq[2])
+  return(error_value)
+}
+
+# test function
+(sensitivity(df))
+```
+
+### 7. Specificity Function
+
+$$ Specificity = \frac{TN}{TN + FP}$$
+The following function returns the specificity of the predictions.
+
+```{r, echo=TRUE}
+specificity <- function(df) {
+  # true negative, false negative, false positive, true positive
+  cols = c("TN", "FN", "FP", "TP")
+  confusion_matrix <- table("Actual"=df$class, "Predicted"=df$scored.class)
+  confusion_matrix <- data.frame(confusion_matrix, index = cols)
+  
+  #calculate specificity
+  error_value <- (confusion_matrix$Freq[1]) / (confusion_matrix$Freq[1] + confusion_matrix$Freq[3])
+  return(error_value)
+}
+
+# test function
+(specificity(df))
+```
+
+### 8. F1 Score Function
+
+$$ F1Score = \frac{2 *Precision *Sensitivity}{Precision + Sensitivity}$$
+
+The following function returns the F1 score of the predictions.
+
+
+```{r, echo=TRUE}
+
+f1_score <- function(df) {
+  # get precision and sensitivity from our custom functions
+  precision_value <- precision(df)
+  sensitivity_value <- sensitivity(df)
+  
+  # calculate F1 Score
+  F1_Score = (2 * precision_value * sensitivity_value) / (precision_value + sensitivity_value)
+  return(F1_Score)
+}
+
+(f1_score(df))
+
+```
+
+### 9. F1 Score Bounds
+
+```{r, echo=TRUE}
+
+f1_function <- function(precision, sensitivity) {
+  f1score <- (2 * precision * sensitivity) / (precision + sensitivity)
+  return (f1score)
+}
+
+# 0 precision, 0.5 sensitivity
+(f1_function(0, .5))
+
+# 1 precision, 1 sensitivity
+(f1_function(1, 1))
+
+
+```
+
+The F1 score is bounded from 0 to 1. 
+
+### 10. ROC Curve
+
+```{r, echo=TRUE}
+
+roc_plot <- function(df, probability) {
+  set.seed(824)
+  
+  x <- seq(0, 1, .01)
+  FPR <- numeric(length(x))
+  TPR <- FPR
+  pos <- sum(df$class == 1)
+  neg <- sum(df$class == 0)
+  
+  for (i in 1:length(x)) {
+    data_subset <- subset(df, df$scored.probability <= x[i])
+    
+    # true positive
+    TP <- sum(data_subset[data_subset$class == 1, probability] > 0.5)
+    
+    # true negative
+    TN <- sum(data_subset[data_subset$class == 0, probability] <= 0.5)
+    
+    # false positive
+    FP <- sum(data_subset[data_subset$class == 0, probability] > 0.5)
+    
+    # false negative
+    FN <- sum(data_subset[data_subset$class == 1, probability] <= 0.5)
+    
+    TPR[i] <- 1 - (TP + FN) / pos
+    FPR[i] <- 1 - (TN + FP) / neg 
+  }
+  
+  classification_data <- data.frame(TPR, FPR)
+  
+  
+  ggplot <- ggplot(classification_data, aes(FPR, TPR))
+  
+  plot = ggplot + 
+    geom_line() + 
+    geom_abline(intercept = 0) + 
+    ggtitle("ROC Curve for Classification data") +
+    theme_bw()
+
+  height = (classification_data$TPR[-1] +
+            classification_data$TPR[-length(classification_data$TPR)]) / 2
+  width = -diff(classification_data$FPR)
+  AUC = sum(height * width)
+  
+  return (list(AUC = AUC, plot))
+}
+
+roc_plot(df, "scored.probability")
+```
+
+## 11. Use All Functions
+
+```{r, echo=TRUE}
+
+Accuracy <- accuracy(df)
+Error <- error(df)
+Precision <- precision(df)
+Sensitivity <- sensitivity(df)
+Specificity <- specificity(df)
+F1_score <- f1_score(df)
+ROC <- roc_plot(df, "scored.probability")
+AUC <- ROC$AUC
+
+classification_data <- t(data.frame(Accuracy, 
+                                    Error, 
+                                    Precision, 
+                                    Sensitivity, 
+                                    Specificity, 
+                                    F1_score,
+                                    AUC))
+classification_data
+```
+
+## 12. Compare to caret Functions
+
+```{r, echo=TRUE}
+cm <- confusionMatrix(data = as.factor(df$scored.class), 
+                      reference = as.factor(df$class), 
+                      positive = "1")
+cm
+
+Sensitivity == cm$byClass["Sensitivity"]
+Specificity == cm$byClass["Specificity"]
+Accuracy == cm$overall["Accuracy"]
+```
+
+Our homebrew R functions match with the caret() package functions. 
+
+## 13. pROC
+
+```{r, echo=TRUE}
+
+roc <- roc(df$class, df$scored.probability)
+plot(roc, main="ROC Curve for Classification data") 
+
+# area under curve
+roc$auc
+
+```
+
+Our AUC was 0.8484 compared to pROC's 0.8503, which are within 0.2% of each other and thus converge--difference could be due to numerical integration under the curve. 
+
+## References
+
+1. Kuhn and Johnson. Applied Predictive Modeling.
+2. Web tutorials: http://www.saedsayad.com/model_evaluation_c.htm
